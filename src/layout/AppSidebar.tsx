@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
 
-import { ChevronDownIcon, GridIcon, HorizontaLDots, TableIcon } from "../icons";
+import { ChevronDownIcon, GridIcon, HorizontaLDots, TableIcon, UserIcon } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 
 type NavItem = {
@@ -20,7 +20,7 @@ const navItems: NavItem[] = [
 ];
 
 const navTables: NavItem[] = [
-  { name: "Users Table", icon: <TableIcon />, path: "/users-table" },
+  { name: "Users Table", icon: <UserIcon />, path: "/users-table" },
 ];
 
 const AppSidebar: React.FC = () => {
@@ -272,7 +272,7 @@ const AppSidebar: React.FC = () => {
                 {isExpanded || isHovered || isMobileOpen ? (
                   "Tables"
                 ) : (
-                  <HorizontaLDots />
+                  <HorizontaLDots className="size-6"/>
                 )}
               </h2>
 

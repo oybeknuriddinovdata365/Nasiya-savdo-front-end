@@ -22,7 +22,6 @@ export default function App() {
               <Route index path="/" element={<Home />} />
 
               <Route path="/profile" element={<UserProfiles />} />
-
               <Route path="/users-table" element={<UsersTable />} />
             </Route>
           </Route>
