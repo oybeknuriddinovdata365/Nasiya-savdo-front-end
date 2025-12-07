@@ -10,6 +10,13 @@ import Badge from "../ui/badge/Badge";
 import Button from "../ui/button/Button";
 import { Modal } from "../ui/modal";
 import { useModal } from "../../hooks/useModal";
+import Input from "../form/input/InputField";
+import Label from "../form/Label";
+import { EnvelopeIcon, EyeCloseIcon, EyeIcon } from "../../icons";
+import { useState } from "react";
+import PhoneInput from "../form/group-input/PhoneInput";
+import FileInput from "../form/input/FileInput";
+import Switch from "../form/switch/Switch";
 
 interface User {
   id: number;
@@ -61,8 +68,72 @@ const usersData: User[] = [
   },
 ];
 export default function UsersTable() {
-  const handleSave = () => {};
+  const [formData, setFormData] = useState<{
+    login: string;
+    password: string;
+    full_name: string;
+    email: string;
+    phone: string;
+    image: File | null;
+    pin_code: string;
+    active: boolean;
+    blocked: boolean;
+  }>({
+    login: "",
+    password: "",
+    full_name: "",
+    email: "",
+    phone: "",
+    image: null,
+    pin_code: "",
+    active: true,
+    blocked: false,
+  });
+  const pustoyForm = {
+    login: "",
+    password: "",
+    full_name: "",
+    email: "",
+    phone: "",
+    image: null,
+    pin_code: "",
+    active: true,
+    blocked: false,
+  };
+  const [showPassword, setShowPassword] = useState(false);
+  const [showPinCode, setShowPinCode] = useState(false);
   const { isOpen, openModal, closeModal } = useModal();
+  const handleSave = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    setFormData(pustoyForm);
+    closeModal();
+
+    console.log("Data: ", formData);
+  };
+  const countries = [
+    { code: "UZ", label: "+998" },
+    { code: "RU", label: "+7" },
+  ];
+  const handlePhoneNumberChange = (phoneNumber: string) => {
+    setFormData({ ...formData, phone: phoneNumber });
+  };
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setFormData({ ...formData, image: file });
+    }
+  };
+  const [isactive, setIsActive] = useState(true);
+  const handleActiveChange = (checked: boolean) => {
+    setIsActive(checked);
+    setFormData({ ...formData, active: checked });
+  };
+
+  const [isBlocked, setisBlocked] = useState(false);
+  const handleBlockChange = (checked: boolean) => {
+    setisBlocked(checked);
+    setFormData({ ...formData, blocked: checked });
+  };
   return (
     <div className="flex  flex-col gap-5">
       <div className="flex justify-between items-center">
@@ -183,14 +254,145 @@ export default function UsersTable() {
           >
             <div className="no-scrollbar relative w-full max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
               <form className="flex flex-col">
-                <div className="custom-scrollbar h-[450px] overflow-y-auto px-2 pb-3">
-                  <div className="mt-7">
-                    <h5 className="mb-5 text-lg font-medium text-gray-800 dark:text-white/90 lg:mb-6">
+                <div className="custom-scrollbar h-[452px] overflow-y-auto px-2 pb-3">
+                  <div className="mt-3">
+                    <h5 className="mb-5 text-lg md:text-[25px] font-medium text-gray-800 dark:text-white/90 lg:mb-6">
                       Yangi User qo'shish
                     </h5>
+                    <div className="grid grid-cols-1  sm:grid-cols-2 gap-3 sm:space-y-3">
+                      <div>
+                        <Label htmlFor="login">Login</Label>
+                        <Input
+                          type="text"
+                          id="login"
+                          onChange={(e) =>
+                            setFormData({ ...formData, login: e.target.value })
+                          }
+                        />
+                      </div>
+                      <div className="w-full">
+                        <Label>Parol</Label>
+                        <div className="relative">
+                          <Input
+                            type={showPassword ? "text" : "password"}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                password: e.target.value,
+                              })
+                            }
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute z-30 -translate-y-1/2 cursor-pointer right-4 top-1/2"
+                          >
+                            {showPassword ? (
+                              <EyeIcon className="fill-gray-500 dark:fill-gray-400 size-5" />
+                            ) : (
+                              <EyeCloseIcon className="fill-gray-500 dark:fill-gray-400 size-5" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                      <div className="w-full">
+                        <Label htmlFor="full_name">Ism Familiya</Label>
+                        <Input
+                          type="text"
+                          id="full_name"
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              full_name: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="w-full">
+                        <Label>Email</Label>
+                        <div className="relative">
+                          <Input
+                            type="text"
+                            className="pl-[62px]"
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                email: e.target.value,
+                              })
+                            }
+                          />
+                          <span className="absolute left-0 top-1/2 -translate-y-1/2 border-r border-gray-200 px-3.5 py-3 text-gray-500 dark:border-gray-800 dark:text-gray-400">
+                            <EnvelopeIcon className="size-6" />
+                          </span>
+                        </div>
+                      </div>
+                      <div>
+                        <Label>Phone</Label>
+                        <PhoneInput
+                          selectPosition="start"
+                          countries={countries}
+                          onChange={handlePhoneNumberChange}
+                        />
+                      </div>
+                      <div>
+                        <Label>Profile Rasm</Label>
+                        <FileInput
+                          onChange={handleFileChange}
+                          className="custom-class"
+                        />
+                      </div>
+
+                      <div className="w-full">
+                        <Label>Pin-Code</Label>
+                        <div className="relative">
+                          <Input
+                            type={showPinCode ? "text" : "password"}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                pin_code: e.target.value,
+                              })
+                            }
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPinCode(!showPinCode)}
+                            className="absolute z-30 -translate-y-1/2 cursor-pointer right-4 top-1/2"
+                          >
+                            {showPassword ? (
+                              <EyeIcon className="fill-gray-500 dark:fill-gray-400 size-5" />
+                            ) : (
+                              <EyeCloseIcon className="fill-gray-500 dark:fill-gray-400 size-5" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                      <div className="flex justify-between sm:justify-center sm:gap-4">
+                        <div className="flex flex-col gap-2 sm:border-2 sm:rounded-lg sm:p-2 w-full dark:border-gray-700">
+                          <h1 className="dark:text-[#8e878c] text-[16px]">
+                            Active
+                          </h1>
+                          <Switch
+                            label={isactive ? "ON" : "OFF"}
+                            defaultChecked={true}
+                            onChange={handleActiveChange}
+                          />
+                        </div>
+
+                        <div className="flex flex-col gap-2 sm:border-2 sm:rounded-lg sm:p-2 w-full dark:border-gray-700">
+                          <h1 className="dark:text-[#8e878c] text-[16px]">
+                            Blocked
+                          </h1>
+                          <Switch
+                            label={isBlocked ? "ON" : "OFF"}
+                            defaultChecked={false}
+                            onChange={handleBlockChange}
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
-
                 <div className="flex items-center gap-3 px-2 mt-6 lg:justify-end">
                   <Button size="sm" variant="outline" onClick={closeModal}>
                     Yopish
