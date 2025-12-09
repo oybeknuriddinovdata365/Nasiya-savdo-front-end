@@ -6,7 +6,8 @@ import AppLayout from "./layout/AppLayout";
 import { ScrollToTop } from "./components/common/ScrollToTop";
 import Home from "./pages/Dashboard/Home";
 import UsersTable from "./components/tables/UsersTable";
-// import ProtectedRoute from "./components/auth/ProtectedRoute";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
+import PublicRoute from "./components/auth/PublicRoute";
 
 export default function App() {
   return (
@@ -14,19 +15,19 @@ export default function App() {
       <Router>
         <ScrollToTop />
         <Routes>
-          <Route path="/signin" element={<SignIn />} />
+          <Route element={<PublicRoute />}>
+            <Route path="/signin" element={<SignIn />} />
+          </Route>
 
-          <Route>
-            {/* element={<ProtectedRoute />}      yozish kerak route ichiga singin uchun */}
+          <Route element={<ProtectedRoute />}>
             <Route element={<AppLayout />}>
               <Route index path="/" element={<Home />} />
 
               <Route path="/profile" element={<UserProfiles />} />
               <Route path="/users-table" element={<UsersTable />} />
             </Route>
+            <Route path="*" element={<NotFound />} />
           </Route>
-
-          <Route path="*" element={<NotFound />} />
         </Routes>
       </Router>
     </>

@@ -1,3 +1,4 @@
+import axios from "axios";
 import {
   createContext,
   useContext,
@@ -5,13 +6,12 @@ import {
   useEffect,
   ReactNode,
 } from "react";
-
 interface User {
   id: number;
   username?: string;
   password?: string;
   phone_number?: string;
-  role: ["superadmin" | "admin"];
+  role: "superadmin" | "admin";
 }
 
 interface AuthContextType {
@@ -27,7 +27,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
+  const API = import.meta.env.VITE_API_URL;
   // login
   const login = async (accessToken: string, refreshToken: string) => {
     localStorage.setItem("access_token", accessToken);
@@ -36,35 +36,57 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   //get user
+
   const fetchUser = async (token: string) => {
     try {
-      const response = await fetch(
-        "https://api.escuelajs.co/api/v1/auth/profile",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      if (response.ok) {
-        const userData = await response.json();
-        setUser(userData);
+      const response = await axios.get(API + "/admin", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const allAdmins = response.data.data;
+
+      const loggedInUserId = Number(localStorage.getItem("user_id"));
+
+      const currentUser = allAdmins.find((u: any) => u.id === loggedInUserId);
+
+      if (currentUser) {
+        setUser(currentUser);
       } else {
         logout();
       }
-    } catch {
+    } catch (err) {
+      console.log("Fetch user error:", err);
       logout();
     }
   };
 
   // logout
-  const logout = () => {
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
-    setUser(null);
+  const logout = async () => {
+    try {
+      const refreshToken = localStorage.getItem("refresh_token");
+
+      if (refreshToken) {
+        await axios.post(
+          API + "/admin/logout",
+          { refresh_token: refreshToken },
+          {
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
+      }
+    } catch (err) {
+      console.log("Logout error:", err);
+    } finally {
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("refresh_token");
+      setUser(null);
+    }
   };
 
-  // get user working
   useEffect(() => {
     const token = localStorage.getItem("access_token");
     if (token) {
@@ -72,7 +94,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } else {
       setIsLoading(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

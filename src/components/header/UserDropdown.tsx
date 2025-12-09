@@ -8,7 +8,6 @@ export default function UserDropdown() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
-
   function toggleDropdown() {
     setIsOpen(!isOpen);
   }
@@ -32,7 +31,9 @@ export default function UserDropdown() {
         </span>
 
         <span className="block mr-1 font-medium text-theme-sm">
-          {user?.username || "User"}
+          {user?.username
+            ? user.username.charAt(0).toUpperCase() + user.username.slice(1)
+            : "UserName"}
         </span>
         <svg
           className={`stroke-gray-500 dark:stroke-gray-400 transition-transform duration-200 ${
@@ -59,9 +60,12 @@ export default function UserDropdown() {
         onClose={closeDropdown}
         className="absolute right-0 mt-[17px] flex w-[260px] flex-col rounded-2xl border border-gray-200 bg-white p-3 shadow-theme-lg dark:border-gray-800 dark:bg-gray-dark"
       >
-        <div>
+        <div className="flex items-center justify-center flex-col">
           <span className="block font-medium text-gray-700 text-theme-sm dark:text-gray-400">
-            {user?.username || "User"} | {user?.role || "SuperAdmin"}
+            {user?.username} |{" "}
+            {user?.role
+              ? user.role.charAt(0).toUpperCase() + user.role.slice(1)
+              : "UserRole"}
           </span>
           <span className="mt-0.5 block text-theme-xs text-gray-500 dark:text-gray-400">
             {user?.phone_number || "+998976069026"}

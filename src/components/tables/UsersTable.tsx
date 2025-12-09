@@ -19,56 +19,14 @@ import {
   PencilIcon,
   TrashBinIcon,
 } from "../../icons";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import PhoneInput from "../form/group-input/PhoneInput";
 import FileInput from "../form/input/FileInput";
 import Switch from "../form/switch/Switch";
 import toast from "react-hot-toast";
-
-interface User {
-  id: number;
-  login: string;
-  full_name: string;
-  email: string;
-  phone: string;
-  avatar: string | null;
-  active: boolean;
-  blocked: boolean;
-}
-
-const usersData: User[] = [
-  {
-    id: 1,
-    login: "sardor.akhmedov",
-    full_name: "Sardor Akhmedov",
-    email: "sardor@gmail.com",
-    phone: "+998901234567",
-    avatar: null,
-    active: true,
-    blocked: false,
-  },
-  {
-    id: 2,
-    login: "mahira.xolmatova",
-    full_name: "Mohira Xolmatova",
-    email: "mohira@gmail.com",
-    phone: "+998977654321",
-    avatar: "/images/user/mohira.jpg",
-    active: true,
-    blocked: false,
-  },
-  {
-    id: 3,
-    login: "jasur.karimov",
-    full_name: "Jasur Karimov",
-    email: "jasur@gmail.com",
-    phone: "+998909998877",
-    avatar: null,
-    active: false,
-    blocked: true,
-  },
-];
-
+import axios from "axios";
+import DefaultUserIcon from "../../assets/defUserIcon.png";
+import { SkeletonRow } from "../common/SkeletonRow";
 interface ErrorType {
   login?: string;
   password?: string;
@@ -78,7 +36,18 @@ interface ErrorType {
   image?: string;
   pin_code?: string;
 }
-
+interface User {
+  id: number;
+  login: string;
+  full_name: string;
+  email: string;
+  phone_number: string;
+  pin_code: string;
+  wallet: number;
+  image: string | null;
+  is_active: boolean;
+  is_blocked: boolean;
+}
 export default function UsersTable() {
   const [formData, setFormData] = useState<{
     login: string;
@@ -101,6 +70,7 @@ export default function UsersTable() {
     active: true,
     blocked: false,
   });
+
   const pustoyForm = {
     login: "",
     password: "",
@@ -121,14 +91,100 @@ export default function UsersTable() {
   const [showPassword, setShowPassword] = useState(false);
   const [showPinCode, setShowPinCode] = useState(false);
   const { isOpen, openModal, closeModal } = useModal();
+  const handleCreateUser = async () => {
+    try {
+      setIsLoading(true);
+      const token = localStorage.getItem("access_token");
+      if (!token) return;
+      const payload = {
+        login: formData.login,
+        password: formData.password,
+        full_name: formData.full_name,
+        email: formData.email,
+        phone_number: formData.phone,
+        pin_code: Number(formData.pin_code),
+      };
+      const response = await axios.post(`${API}/store`, payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = response.data.data;
+      const newUser: User = {
+        id: data.id,
+        login: data.login,
+        full_name: data.full_name,
+        email: data.email,
+        phone_number: data.phone_number,
+        pin_code: data.pin_code,
+        wallet: data.wallet || 0,
+        image: data.image || null,
+        is_active: !!data.is_active,
+        is_blocked: !!data.is_blocked,
+      };
+      setUsersData((prev) => [...prev, newUser]);
+      toast.success("User muvaffaqiyatli qo'shildi!");
+
+      setFormData(pustoyForm);
+      closeModal();
+    } catch (err) {
+      console.error("Create user error:", err);
+      toast.error("User qo'shishda xatolik yuz berdi");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  const handleUpdateUser = async () => {
+    try {
+      const token = localStorage.getItem("access_token");
+      if (!token || !editUserId) return;
+
+      const payload: any = {};
+
+      if (formData.full_name) payload.full_name = formData.full_name;
+      if (formData.login) payload.login = formData.login;
+      if (formData.email) payload.email = formData.email;
+      if (formData.phone) payload.phone_number = formData.phone;
+      if (formData.pin_code) payload.pin_code = Number(formData.pin_code);
+
+      if (formData.password.trim().length > 0) {
+        payload.password = formData.password;
+      }
+
+      if (formData.image instanceof File) {
+        payload.image = formData.image;
+      }
+
+      const response = await axios.patch(
+        `${API}/store/${editUserId}`,
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      toast.success("User Muvaffaqqiyatli yangilandi!");
+
+      setUsersData((prev) =>
+        prev.map((u) => (u.id === editUserId ? response.data : u))
+      );
+
+      closeModal();
+    } catch (error) {
+      console.error("Update error:", error);
+      toast.error("Yangilashda xatolik!");
+    }
+  };
+
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
 
     if (editUserId) {
-      toast.success("User ma'lumotlari yangilandi!");
+      handleUpdateUser();
     } else {
-      toast.success("User muvaffaqiyatli qo'shildi!");
+      handleCreateUser();
     }
 
     setEditUserId(null);
@@ -161,29 +217,105 @@ export default function UsersTable() {
   };
 
   const [errors, setErrors] = useState<ErrorType>({});
+  const [usersData, setUsersData] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const handleDeleteUser = async () => {
+    try {
+      setIsLoading(true);
+      const token = localStorage.getItem("access_token");
+      await axios.delete(`${API}/store/${deleteUserId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      toast.success("User muvaffaqiyatli o'chirildi!");
+
+      setUsersData((prev) => prev.filter((u) => u.id !== deleteUserId));
+    } catch (err) {
+      console.error("Delete error:", err);
+      toast.error("Userni o'chirishda xatolik yuz berdi");
+    } finally {
+      setDeleteUserId(null);
+      closeDeleteModal();
+      setIsLoading(false);
+    }
+  };
+
+  const API = import.meta.env.VITE_API_URL;
+  useEffect(() => {
+    const fetchUsers = async () => {
+      setIsLoading(true);
+      try {
+        const token = localStorage.getItem("access_token");
+        if (!token) return;
+
+        const response = await axios.get(`${API}/store`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        console.log("API response:", response.data);
+
+        if (Array.isArray(response.data.data)) {
+          setUsersData(response.data.data);
+        } else {
+          setUsersData([response.data.data]);
+        }
+      } catch (err) {
+        console.error("Fetch users error:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUsers();
+  }, [API]);
 
   const validate = () => {
     const newErrors: ErrorType = {};
     const isEdit = editUserId !== null;
 
     if (!isEdit || formData.password.trim().length > 0) {
-      if (formData.password.length < 8) {
-        newErrors.password = "Parol kamida 8 ta belgidan iborat bo'lishi kerak";
+      const passwordRegex =
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&.])[A-Za-z\d@$!%*?&.]{8,}$/;
+      if (!passwordRegex.test(formData.password)) {
+        newErrors.password =
+          "Parol kamida 8 ta belgidan va Kuchli bo'lishi kerak. Masalan: Pass1!";
       }
     }
 
+    if (!formData.full_name) {
+      newErrors.full_name = "Ism Familiya Kiritilmadi!";
+    }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
       newErrors.email = "Email formati noto'g'ri kiritildi";
+    } else if (
+      usersData.some((u) => u.email === formData.email && u.id !== editUserId)
+    ) {
+      newErrors.email = "Email allaqachon mavjud";
     }
 
     if (!formData.phone.startsWith("+998") || formData.phone.length !== 13) {
       newErrors.phone = "Telefon raqam noto'g'ri formatda kiritildi";
+    } else if (
+      usersData.some(
+        (u) => u.phone_number === formData.phone && u.id !== editUserId
+      )
+    ) {
+      newErrors.phone = "Telefon raqam allaqachon mavjud";
     }
 
-    if (!isEdit || formData.pin_code.trim().length > 0) {
-      const pinRegex = /^[0-9]{4}$/;
-      if (!pinRegex.test(formData.pin_code)) {
+    if (
+      usersData.some((u) => u.login === formData.login && u.id !== editUserId)
+    ) {
+      newErrors.login = "Login allaqachon mavjud";
+    }
+    if (!formData.login) {
+      newErrors.login = "Login kiritilmadi";
+    }
+
+    const pinCode = formData.pin_code?.toString() || "";
+    if (!isEdit || pinCode.trim().length > 0) {
+      const pinRegex = /^\d{4}$/;
+      if (!pinRegex.test(pinCode)) {
         newErrors.pin_code = "Pin kod 4 ta raqamdan iborat bo'lishi kerak";
       }
     }
@@ -200,7 +332,6 @@ export default function UsersTable() {
   };
 
   const [editUserId, setEditUserId] = useState<number | null>(null);
-
   const handleEdit = (user: User) => {
     setEditUserId(user.id);
 
@@ -209,11 +340,11 @@ export default function UsersTable() {
       password: "",
       full_name: user.full_name,
       email: user.email,
-      phone: user.phone,
+      phone: user.phone_number,
       image: null,
-      pin_code: "",
-      active: true,
-      blocked: false,
+      pin_code: user.pin_code?.toString(),
+      active: user.is_active,
+      blocked: user.is_active,
     });
 
     openModal();
@@ -234,125 +365,150 @@ export default function UsersTable() {
       </div>
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
         <div className="max-w-full overflow-x-auto">
-          <Table>
-            {/* Header */}
-            <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
-              <TableRow>
-                <TableCell
-                  isHeader
-                  className="px-5 py-3 font-medium text-gray-500 text-theme-xs"
-                >
-                  Ism Familiya
-                </TableCell>
-
-                <TableCell
-                  isHeader
-                  className="px-5 py-3 font-medium text-gray-500 text-theme-xs"
-                >
-                  Login
-                </TableCell>
-
-                <TableCell
-                  isHeader
-                  className="px-5 py-3 font-medium text-gray-500 text-theme-xs"
-                >
-                  Email
-                </TableCell>
-
-                <TableCell
-                  isHeader
-                  className="px-5 py-3 font-medium text-gray-500 text-theme-xs"
-                >
-                  Telefon Raqam
-                </TableCell>
-
-                <TableCell
-                  isHeader
-                  className="px-5 py-3 font-medium text-gray-500 text-theme-xs"
-                >
-                  Status
-                </TableCell>
-                <TableCell
-                  isHeader
-                  className="px-5 py-3 font-medium text-gray-500 text-theme-xs"
-                >
-                  Access
-                </TableCell>
-                <TableCell
-                  isHeader
-                  className="px-5 py-3 font-medium text-gray-500 text-theme-xs"
-                >
-                  Control
-                </TableCell>
-              </TableRow>
-            </TableHeader>
-
-            {/* BODY */}
-            <TableBody>
-              {usersData.map((user) => (
-                <TableRow key={user.id}>
-                  {/* Avatar + Fullname */}
-                  <TableCell className="px-7 py-4 ">
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={user.avatar || "/images/default-user.png"}
-                        className="w-10 h-10 rounded-full object-cover"
-                      />
-                      <span className="text-sm text-gray-800 dark:text-white">
-                        {user.full_name}
-                      </span>
-                    </div>
+          {isLoading ? (
+            <div className="w-full">
+              <SkeletonRow />
+              <SkeletonRow />
+              <SkeletonRow />
+              <SkeletonRow />
+              <SkeletonRow />
+              <SkeletonRow />
+            </div>
+          ) : (
+            <Table>
+              {/* Header */}
+              <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
+                <TableRow>
+                  <TableCell
+                    isHeader
+                    className="px-5 py-3 font-medium text-gray-500 text-theme-xs"
+                  >
+                    Ism Familiya
                   </TableCell>
 
-                  {/* Login */}
-                  <TableCell className="text-gray-800 dark:text-white px-5 py-4">
-                    {user.login}
+                  <TableCell
+                    isHeader
+                    className="px-5 py-3 font-medium text-gray-500 text-theme-xs"
+                  >
+                    Login
                   </TableCell>
 
-                  {/* Email */}
-                  <TableCell className="text-gray-800 dark:text-white px-5 py-4">
-                    {user.email}
+                  <TableCell
+                    isHeader
+                    className="px-5 py-3 font-medium text-gray-500 text-theme-xs"
+                  >
+                    Email
                   </TableCell>
 
-                  {/* Phone */}
-                  <TableCell className="text-gray-800 dark:text-white px-5 py-4">
-                    {user.phone}
+                  <TableCell
+                    isHeader
+                    className="px-5 py-3 font-medium text-gray-500 text-theme-xs"
+                  >
+                    Telefon Raqam
                   </TableCell>
 
-                  {/* Active */}
-                  <TableCell className="px-5 py-4">
-                    <Badge color={user.active ? "success" : "error"}>
-                      {user.active ? "Active" : "Inactive"}
-                    </Badge>
+                  <TableCell
+                    isHeader
+                    className="px-5 py-3 font-medium text-gray-500 text-theme-xs"
+                  >
+                    Status
                   </TableCell>
-
-                  {/* Blocked */}
-                  <TableCell className="px-5 py-4">
-                    <Badge color={user.blocked ? "error" : "success"}>
-                      {user.blocked ? "Blocked" : "Open"}
-                    </Badge>
+                  <TableCell
+                    isHeader
+                    className="px-5 py-3 font-medium text-gray-500 text-theme-xs"
+                  >
+                    Access
                   </TableCell>
-
-                  {/* Actions */}
-                  <TableCell className="flex mt-4 px-5 ">
-                    <Button size="sm" onClick={() => handleEdit(user)}>
-                      <PencilIcon fontSize={18} />
-                    </Button>
-                    <Button
-                      size="sm"
-                      className="ml-2"
-                      onClick={() => {
-                        setDeleteUserId(user.id);
-                        openDeleteModal();
-                      }}
-                    >
-                      <TrashBinIcon fontSize={18} />
-                    </Button>
+                  <TableCell
+                    isHeader
+                    className="px-5 py-3 font-medium text-gray-500 text-theme-xs"
+                  >
+                    Control
                   </TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+
+              {/* BODY */}
+              <TableBody>
+                {usersData.length > 0 ? (
+                  usersData.map((user: User) => (
+                    <TableRow key={user.id}>
+                      {/* Avatar + Fullname */}
+                      <TableCell className="px-7 py-4 ">
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={
+                              user?.image && user.image.trim() !== ""
+                                ? user.image
+                                : DefaultUserIcon
+                            }
+                            alt={user.full_name || "Default User"}
+                            className="w-10 h-10 rounded-full object-cover"
+                          />
+
+                          <span className="text-sm text-gray-800 dark:text-white">
+                            {user.full_name}
+                          </span>
+                        </div>
+                      </TableCell>
+
+                      {/* Login */}
+                      <TableCell className="text-gray-800 dark:text-white px-5 py-4 text-center">
+                        {user.login}
+                      </TableCell>
+
+                      {/* Email */}
+                      <TableCell className="text-gray-800 dark:text-white px-5 py-4 text-center">
+                        {user.email}
+                      </TableCell>
+
+                      {/* Phone */}
+                      <TableCell className="text-gray-800 dark:text-white px-5 py-4 text-center">
+                        {user.phone_number}
+                      </TableCell>
+
+                      {/* Active */}
+                      <TableCell className="px-5 py-4 items-center">
+                        <Badge color={user.is_active ? "success" : "error"}>
+                          {user.is_active ? "Active" : "Inactive"}
+                        </Badge>
+                      </TableCell>
+
+                      {/* Blocked */}
+                      <TableCell className="px-5 py-4 ">
+                        <Badge color={user.is_blocked ? "error" : "success"}>
+                          {user.is_blocked ? "Blocked" : "Open"}
+                        </Badge>
+                      </TableCell>
+
+                      {/* Actions */}
+                      <TableCell className="flex mt-4 px-5 ">
+                        <Button size="sm" onClick={() => handleEdit(user)}>
+                          <PencilIcon fontSize={18} />
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="ml-2"
+                          onClick={() => {
+                            setDeleteUserId(user.id);
+                            openDeleteModal();
+                          }}
+                        >
+                          <TrashBinIcon fontSize={18} />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow className="p-4 w-full flex justify-center items-center">
+                    <TableCell className="text-center text-gray-500">
+                      Userlar mavjud emas
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          )}
           <Modal isOpen={isOpen} onClose={close} className="max-w-[700px] m-4">
             <div className="no-scrollbar relative w-full max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
               <form className="flex flex-col">
@@ -372,6 +528,11 @@ export default function UsersTable() {
                             setFormData({ ...formData, login: e.target.value })
                           }
                         />
+                        {errors.login && (
+                          <p className="text-red-500 text-[12px] mt-1">
+                            * {errors.login}
+                          </p>
+                        )}
                       </div>
                       <div className="w-full">
                         <Label>Parol</Label>
@@ -419,6 +580,11 @@ export default function UsersTable() {
                             })
                           }
                         />
+                        {errors.full_name && (
+                          <p className="text-red-500 text-[12px] mt-1">
+                            * {errors.full_name}
+                          </p>
+                        )}
                       </div>
                       <div className="w-full">
                         <Label>Email</Label>
@@ -479,6 +645,7 @@ export default function UsersTable() {
                           <div className="relative">
                             <Input
                               type={showPinCode ? "text" : "password"}
+                              value={formData.pin_code}
                               onChange={(e) =>
                                 setFormData({
                                   ...formData,
@@ -505,29 +672,31 @@ export default function UsersTable() {
                           )}
                         </div>
                       </div>
-                      <div className="flex justify-between sm:justify-center sm:gap-4">
-                        <div className="flex flex-col gap-2 sm:border-2 sm:rounded-lg sm:p-2 w-full dark:border-gray-700">
-                          <h1 className="dark:text-[#8e878c] text-[16px]">
-                            Active
-                          </h1>
-                          <Switch
-                            label={isactive ? "ON" : "OFF"}
-                            defaultChecked={true}
-                            onChange={handleActiveChange}
-                          />
-                        </div>
+                      {editUserId && (
+                        <div className="flex justify-between sm:justify-center sm:gap-4">
+                          <div className="flex flex-col gap-2 sm:border-2 sm:rounded-lg sm:p-2 w-full dark:border-gray-700">
+                            <h1 className="dark:text-[#8e878c] text-[16px]">
+                              Active
+                            </h1>
+                            <Switch
+                              label={isactive ? "ON" : "OFF"}
+                              defaultChecked={true}
+                              onChange={handleActiveChange}
+                            />
+                          </div>
 
-                        <div className="flex flex-col gap-2 sm:border-2 sm:rounded-lg sm:p-2 w-full dark:border-gray-700">
-                          <h1 className="dark:text-[#8e878c] text-[16px]">
-                            Blocked
-                          </h1>
-                          <Switch
-                            label={isBlocked ? "ON" : "OFF"}
-                            defaultChecked={false}
-                            onChange={handleBlockChange}
-                          />
+                          <div className="flex flex-col gap-2 sm:border-2 sm:rounded-lg sm:p-2 w-full dark:border-gray-700">
+                            <h1 className="dark:text-[#8e878c] text-[16px]">
+                              Blocked
+                            </h1>
+                            <Switch
+                              label={isBlocked ? "ON" : "OFF"}
+                              defaultChecked={false}
+                              onChange={handleBlockChange}
+                            />
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -554,9 +723,9 @@ export default function UsersTable() {
               </div>
               <div className="mt-5">
                 <p className="dark:text-white/70 text-sm text-black/70">
-                  Agar hozir bu buyruqni tasdiqlasangiz tanlangan ma'lumot o'chib ketadi va
-                  uni orqaga qaytarishni iloji yo'q bo'ladi. Rostdan ham buni
-                  tasdiqlaysizmi?
+                  Agar hozir bu buyruqni tasdiqlasangiz tanlangan ma'lumot
+                  o'chib ketadi va uni orqaga qaytarishni iloji yo'q bo'ladi.
+                  Rostdan ham buni tasdiqlaysizmi?
                 </p>
               </div>
               <div className="flex justify-end gap-3 mt-4">
@@ -566,8 +735,9 @@ export default function UsersTable() {
                 <Button
                   size="sm"
                   onClick={() => {
-                    // delete logic
-                    console.log("User deleted:", deleteUserId);
+                    if (!deleteUserId) return;
+                    handleDeleteUser();
+
                     closeDeleteModal();
                   }}
                 >
