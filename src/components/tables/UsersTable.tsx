@@ -95,6 +95,12 @@ export default function UsersTable() {
   const [showPassword, setShowPassword] = useState(false);
   const [showPinCode, setShowPinCode] = useState(false);
   const { isOpen, openModal, closeModal } = useModal();
+  const [selectedUserData, setSelectedUserData] = useState<User | null>(null);
+  const closeMainModal = () => {
+    closeModal();
+    return Object.keys(newErrors).length === 0;
+    setSelectedUserData(null);
+  };
   const handleCreateUser = async () => {
     try {
       setIsLoading(true);
@@ -176,8 +182,8 @@ export default function UsersTable() {
       if (formData.file instanceof File) {
         fd.append("file", formData.file);
       }
-      fd.append("is_active", String(formData.active));
-      fd.append("is_blocked", String(formData.blocked));
+      fd.append("is_active", formData.active ? "true" : "");
+      fd.append("is_blocked", formData.blocked ? "true" : "");
 
       const response = await axios.patch(`${API}/store/${editUserId}`, fd, {
         headers: {
@@ -205,9 +211,10 @@ export default function UsersTable() {
     e.preventDefault();
 
     if (editUserId) {
+      if (!FetchValidate()) return;
       handleUpdateUser();
     } else {
-      if (!validate()) return;
+      if (!CreateValidate()) return;
       handleCreateUser();
     }
 
@@ -228,12 +235,6 @@ export default function UsersTable() {
       setFormData({ ...formData, file: file });
     }
   };
-  const [isactive, setIsActive] = useState(true);
-  const handleActiveChange = (checked: boolean) => {
-    setIsActive(checked);
-    setFormData({ ...formData, active: checked });
-  };
-
   const [isBlocked, setisBlocked] = useState(false);
   const handleBlockChange = (checked: boolean) => {
     setisBlocked(checked);
@@ -243,6 +244,11 @@ export default function UsersTable() {
   const [errors, setErrors] = useState<ErrorType>({});
   const [usersData, setUsersData] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const closeModalMain = () => {
+    closeModal();
+    setErrors({})
+    setSelectedUserData(null);
+  };
   const handleDeleteUser = async () => {
     try {
       setIsLoading(true);
@@ -292,7 +298,7 @@ export default function UsersTable() {
     fetchUsers();
   }, [API]);
 
-  const validate = () => {
+  const CreateValidate = () => {
     const newErrors: ErrorType = {};
     const isEdit = editUserId !== null;
 
@@ -355,9 +361,78 @@ export default function UsersTable() {
     return Object.keys(newErrors).length === 0;
   };
 
+  const FetchValidate = () => {
+    const newErrors: ErrorType = {};
+
+    // Parol tekshiruvi (faqat agar foydalanuvchi yangilamoqchi bo'lsa)
+    if (formData.password && formData.password.trim().length > 0) {
+      const passwordRegex =
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&.])[A-Za-z\d@$!%*?&.]{8,}$/;
+      if (!passwordRegex.test(formData.password)) {
+        newErrors.password =
+          "Parol kamida 8 ta belgidan va kuchli bo'lishi kerak. Masalan: Pass111!";
+      }
+    }
+    if (formData.full_name) {
+      if (formData.full_name.length < 3) {
+        newErrors.full_name =
+          "Ism Familiya kamida 3 ta belgidan iborat bo'lishi kerak";
+      }
+      // if
+    }
+
+    // Email tekshiruvi
+    if (formData.email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        newErrors.email = "Email formati noto'g'ri kiritildi";
+      }
+      if (usersData.some((u) => u.email === formData.email)) {
+        newErrors.email = "Email allaqachon mavjud";
+      }
+    }
+
+    if (formData.phone) {
+      if (!formData.phone.startsWith("+998") || formData.phone.length !== 13) {
+        newErrors.phone = "Telefon raqam noto'g'ri formatda kiritildi";
+      } else if (usersData.some((u) => u.phone_number === formData.phone)) {
+        newErrors.phone = "Telefon raqam allaqachon mavjud";
+      }
+    }
+    if (formData.login) {
+      if (formData.login.length < 3) {
+        newErrors.login = "Login kamida 3 ta belgidan iborat bo'lishi kerak";
+      }
+      if (usersData.some((u) => u.login === formData.login)) {
+        newErrors.login = "Login allaqachon mavjud";
+      }
+    }
+
+    if (formData.pin_code) {
+      const pinCode = formData.pin_code.toString();
+      const pinRegex = /^\d{4}$/;
+      if (!pinRegex.test(pinCode)) {
+        newErrors.pin_code = "Pin kod 4 ta raqamdan iborat bo'lishi kerak";
+      }
+    }
+
+    if (formData.file) {
+      const allowed = ["image/png", "image/jpeg", "image/webp"];
+      if (!allowed.includes(formData.file.type)) {
+        newErrors.image = "Noto'g'ri formatdagi rasm yuklandi";
+      }
+    }
+
+    setErrors(newErrors);
+
+    // Agar xatolar bo'lmasa true qaytaradi
+    return Object.keys(newErrors).length === 0;
+  };
+
   const [editUserId, setEditUserId] = useState<number | null>(null);
   const handleEdit = (user: User) => {
     setEditUserId(user.id);
+    setSelectedUserData(user);
     setFormData({
       login: "",
       password: "",
@@ -367,10 +442,11 @@ export default function UsersTable() {
       file: null,
       pin_code: "",
       active: user.is_active,
-      blocked: user.is_blocked, 
+      blocked: user.is_blocked,
     });
     openModal();
   };
+
   const [deleteUserId, setDeleteUserId] = useState<number | null>(null);
   const {
     isOpen: isDeleteOpen,
@@ -690,35 +766,22 @@ export default function UsersTable() {
                         </div>
                       </div>
                       {editUserId && (
-                        <div className="flex justify-between sm:justify-center sm:gap-4">
-                          <div className="flex flex-col gap-2 sm:border-2 sm:rounded-lg sm:p-2 w-full dark:border-gray-700">
-                            <h1 className="dark:text-[#8e878c] text-[16px]">
-                              Active
-                            </h1>
-                            <Switch
-                              label={isactive ? "ON" : "OFF"}
-                              defaultChecked={isactive}
-                              onChange={handleActiveChange}
-                            />
-                          </div>
-
-                          <div className="flex flex-col gap-2 sm:border-2 sm:rounded-lg sm:p-2 w-full dark:border-gray-700">
-                            <h1 className="dark:text-[#8e878c] text-[16px]">
-                              Blocked
-                            </h1>
-                            <Switch
-                              label={isBlocked ? "ON" : "OFF"}
-                              defaultChecked={!isBlocked}
-                              onChange={handleBlockChange}
-                            />
-                          </div>
+                        <div className="flex items-center gap-2 sm:border-2 sm:rounded-lg sm:p-2 w-full dark:border-gray-700">
+                          <h1 className="dark:text-[#8e878c] text-[16px]">
+                            Blocked
+                          </h1>
+                          <Switch
+                            label={isBlocked ? "ON" : "OFF"}
+                            defaultChecked={isBlocked}
+                            onChange={handleBlockChange}
+                          />
                         </div>
                       )}
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 px-2 mt-6 lg:justify-end">
-                  <Button size="sm" variant="outline" onClick={close}>
+                  <Button size="sm" variant="outline" onClick={closeModalMain}>
                     Yopish
                   </Button>
 
