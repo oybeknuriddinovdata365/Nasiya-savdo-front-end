@@ -95,12 +95,7 @@ export default function UsersTable() {
   const [showPassword, setShowPassword] = useState(false);
   const [showPinCode, setShowPinCode] = useState(false);
   const { isOpen, openModal, closeModal } = useModal();
-  const [selectedUserData, setSelectedUserData] = useState<User | null>(null);
-  const closeMainModal = () => {
-    closeModal();
-    return Object.keys(newErrors).length === 0;
-    setSelectedUserData(null);
-  };
+
   const handleCreateUser = async () => {
     try {
       setIsLoading(true);
@@ -246,8 +241,7 @@ export default function UsersTable() {
   const [isLoading, setIsLoading] = useState(false);
   const closeModalMain = () => {
     closeModal();
-    setErrors({})
-    setSelectedUserData(null);
+    setErrors({});
   };
   const handleDeleteUser = async () => {
     try {
@@ -432,7 +426,6 @@ export default function UsersTable() {
   const [editUserId, setEditUserId] = useState<number | null>(null);
   const handleEdit = (user: User) => {
     setEditUserId(user.id);
-    setSelectedUserData(user);
     setFormData({
       login: "",
       password: "",
