@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
 
-import { ChevronDownIcon, GridIcon, HorizontaLDots, TableIcon } from "../icons";
+import {
+  ChevronDownIcon,
+  GridIcon,
+  HorizontaLDots,
+  UserIcon,
+} from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 
 type NavItem = {
@@ -20,7 +25,7 @@ const navItems: NavItem[] = [
 ];
 
 const navTables: NavItem[] = [
-  { name: "Users Table", icon: <TableIcon />, path: "/users-table" },
+  { name: "Users Table", icon: <UserIcon />, path: "/users-table" },
 ];
 
 const AppSidebar: React.FC = () => {
@@ -233,14 +238,20 @@ const AppSidebar: React.FC = () => {
       <div className="flex flex-col overflow-y-auto duration-300 ease-linear no-scrollbar mt-5">
         <nav className="mb-6">
           <div className="flex items-center justify-center">
-            {isMobileOpen ? '' : <img src="/images/logo/logo.svg" alt="logo" width={30} />}
-            {isExpanded || isHovered || isMobileOpen ? (
-              <h1 className="h-15 flex items-center justify-center text-lg font-semibold tracking-widest ml-3 dark:text-white">
-                SuperAdmin
-              </h1>
-            ) : (
-              <div className="h-15 "></div>
-            )}
+            <Link to={"/"} className="flex items-center">
+              {isMobileOpen ? (
+                ""
+              ) : (
+                <img src="/images/logo/logo.svg" alt="logo" width={30} />
+              )}
+              {isExpanded || isHovered || isMobileOpen ? (
+                <h1 className="h-15 flex items-center justify-center text-lg font-semibold tracking-widest ml-3 dark:text-white">
+                  SuperAdmin
+                </h1>
+              ) : (
+                <div className="h-15 "></div>
+              )}
+            </Link>
           </div>
           <div className="flex flex-col gap-4">
             <div>
@@ -272,7 +283,7 @@ const AppSidebar: React.FC = () => {
                 {isExpanded || isHovered || isMobileOpen ? (
                   "Tables"
                 ) : (
-                  <HorizontaLDots />
+                  <HorizontaLDots className="size-6" />
                 )}
               </h2>
 

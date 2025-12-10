@@ -1,8 +1,9 @@
 import { Navigate, Outlet } from "react-router";
 import { useAuth } from "../../context/AuthContext";
 
-export default function ProtectedRoute() {
+export default function PublicRoute() {
   const { isAuthenticated, isLoading } = useAuth();
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -11,5 +12,6 @@ export default function ProtectedRoute() {
     );
   }
 
-  return isAuthenticated ? <Outlet /> : <Navigate to="/signin" replace />;
+  // Agar foydalanuvchi login qilgan bo'lsa, / ga yo'naltiradi
+  return !isAuthenticated ? <Outlet /> : <Navigate to="/" replace />;
 }
