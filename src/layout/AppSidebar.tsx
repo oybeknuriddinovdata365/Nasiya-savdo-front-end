@@ -5,7 +5,6 @@ import {
   ChevronDownIcon,
   GridIcon,
   HorizontaLDots,
-  TableIcon,
   UserIcon,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
