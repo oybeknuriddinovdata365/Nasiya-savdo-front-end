@@ -33,6 +33,7 @@ interface ErrorType {
   full_name?: string;
   email?: string;
   phone?: string;
+  adress?: string;
   image?: string;
   pin_code?: string;
 }
@@ -44,10 +45,12 @@ interface User {
   phone_number: string;
   pin_code: string;
   wallet: number;
-  image: string | null;
+  file: File | null; // upload uchun
+  image: string | null; // backenddan keladigan URL
   is_active: boolean;
   is_blocked: boolean;
 }
+
 export default function UsersTable() {
   const [formData, setFormData] = useState<{
     login: string;
@@ -55,7 +58,7 @@ export default function UsersTable() {
     full_name: string;
     email: string;
     phone: string;
-    image: File | null;
+    file: File | null;
     pin_code: string;
     active: boolean;
     blocked: boolean;
@@ -65,7 +68,7 @@ export default function UsersTable() {
     full_name: "",
     email: "",
     phone: "",
-    image: null,
+    file: null,
     pin_code: "",
     active: true,
     blocked: false,
@@ -77,7 +80,8 @@ export default function UsersTable() {
     full_name: "",
     email: "",
     phone: "",
-    image: null,
+    file: null,
+    address: "",
     pin_code: "",
     active: true,
     blocked: false,
@@ -96,18 +100,28 @@ export default function UsersTable() {
       setIsLoading(true);
       const token = localStorage.getItem("access_token");
       if (!token) return;
-      const payload = {
-        login: formData.login,
-        password: formData.password,
-        full_name: formData.full_name,
-        email: formData.email,
-        phone_number: formData.phone,
-        pin_code: Number(formData.pin_code),
-      };
-      const response = await axios.post(`${API}/store`, payload, {
-        headers: { Authorization: `Bearer ${token}` },
+
+      const fd = new FormData();
+      fd.append("login", formData.login);
+      fd.append("password", formData.password);
+      fd.append("full_name", formData.full_name);
+      fd.append("email", formData.email);
+      fd.append("phone_number", formData.phone);
+      fd.append("pin_code", formData.pin_code);
+
+      if (formData.file instanceof File) {
+        fd.append("file", formData.file); // backend image kutadi
+      }
+
+      const response = await axios.post(`${API}/store/create`, fd, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
       });
+
       const data = response.data.data;
+
       const newUser: User = {
         id: data.id,
         login: data.login,
@@ -116,13 +130,14 @@ export default function UsersTable() {
         phone_number: data.phone_number,
         pin_code: data.pin_code,
         wallet: data.wallet || 0,
+        file: null,
         image: data.image || null,
         is_active: !!data.is_active,
         is_blocked: !!data.is_blocked,
       };
+
       setUsersData((prev) => [...prev, newUser]);
       toast.success("User muvaffaqiyatli qo'shildi!");
-
       setFormData(pustoyForm);
       closeModal();
     } catch (err) {
@@ -132,58 +147,67 @@ export default function UsersTable() {
       setIsLoading(false);
     }
   };
+
   const handleUpdateUser = async () => {
     try {
       const token = localStorage.getItem("access_token");
       if (!token || !editUserId) return;
+      const fd = new FormData();
 
-      const payload: any = {};
-
-      if (formData.full_name) payload.full_name = formData.full_name;
-      if (formData.login) payload.login = formData.login;
-      if (formData.email) payload.email = formData.email;
-      if (formData.phone) payload.phone_number = formData.phone;
-      if (formData.pin_code) payload.pin_code = Number(formData.pin_code);
-
-      if (formData.password.trim().length > 0) {
-        payload.password = formData.password;
+      console.log(formData);
+      if (formData.full_name) {
+        fd.append("full_name", formData.full_name);
       }
-
-      if (formData.image instanceof File) {
-        payload.image = formData.image;
+      if (formData.login) {
+        fd.append("login", formData.login);
       }
+      if (formData.email) {
+        fd.append("email", formData.email);
+      }
+      if (formData.phone) {
+        fd.append("phone_number", formData.phone);
+      }
+      if (formData.pin_code) {
+        fd.append("pin_code", String(Number(formData.pin_code)));
+      }
+      if (formData.password) {
+        fd.append("password", formData.password);
+      }
+      if (formData.file instanceof File) {
+        fd.append("file", formData.file);
+      }
+      fd.append("is_active", String(formData.active));
+      fd.append("is_blocked", String(formData.blocked));
 
-      const response = await axios.patch(
-        `${API}/store/${editUserId}`,
-        payload,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+      const response = await axios.patch(`${API}/store/${editUserId}`, fd, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
-      toast.success("User Muvaffaqqiyatli yangilandi!");
+      toast.success("User muvaffaqqiyatli yangilandi!");
+
+      const updatedUser = response.data.data;
 
       setUsersData((prev) =>
-        prev.map((u) => (u.id === editUserId ? response.data : u))
+        prev.map((u) => (u.id === editUserId ? updatedUser : u))
       );
 
       closeModal();
-    } catch (error) {
+    } catch (error: any) {
+      toast.error("Yangilashda xatolik yuz berdi!");
       console.error("Update error:", error);
-      toast.error("Yangilashda xatolik!");
     }
   };
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate()) return;
 
     if (editUserId) {
       handleUpdateUser();
     } else {
+      if (!validate()) return;
       handleCreateUser();
     }
 
@@ -201,7 +225,7 @@ export default function UsersTable() {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      setFormData({ ...formData, image: file });
+      setFormData({ ...formData, file: file });
     }
   };
   const [isactive, setIsActive] = useState(true);
@@ -320,9 +344,9 @@ export default function UsersTable() {
       }
     }
 
-    if (formData.image) {
+    if (formData.file) {
       const allowed = ["image/png", "image/jpeg", "image/webp"];
-      if (!allowed.includes(formData.image.type)) {
+      if (!allowed.includes(formData.file.type)) {
         newErrors.image = "Noto'g'ri formatdagi rasm yuklandi";
       }
     }
@@ -334,19 +358,17 @@ export default function UsersTable() {
   const [editUserId, setEditUserId] = useState<number | null>(null);
   const handleEdit = (user: User) => {
     setEditUserId(user.id);
-
     setFormData({
-      login: user.login,
+      login: "",
       password: "",
-      full_name: user.full_name,
-      email: user.email,
-      phone: user.phone_number,
-      image: null,
-      pin_code: user.pin_code?.toString(),
+      full_name: "",
+      email: "",
+      phone: "",
+      file: null,
+      pin_code: "",
       active: user.is_active,
-      blocked: user.is_active,
+      blocked: user.is_blocked, 
     });
-
     openModal();
   };
   const [deleteUserId, setDeleteUserId] = useState<number | null>(null);
@@ -438,11 +460,12 @@ export default function UsersTable() {
                         <div className="flex items-center gap-3">
                           <img
                             src={
-                              user?.image && user.image.trim() !== ""
+                              user.file instanceof File
+                                ? URL.createObjectURL(user.file)
+                                : user.image
                                 ? user.image
                                 : DefaultUserIcon
                             }
-                            alt={user.full_name || "Default User"}
                             className="w-10 h-10 rounded-full object-cover"
                           />
 
@@ -522,7 +545,6 @@ export default function UsersTable() {
                         <Label htmlFor="login">Login</Label>
                         <Input
                           type="text"
-                          value={formData.login}
                           id="login"
                           onChange={(e) =>
                             setFormData({ ...formData, login: e.target.value })
@@ -540,7 +562,6 @@ export default function UsersTable() {
                           <div className="relative">
                             <Input
                               type={showPassword ? "text" : "password"}
-                              value={formData.password}
                               onChange={(e) =>
                                 setFormData({
                                   ...formData,
@@ -572,7 +593,6 @@ export default function UsersTable() {
                         <Input
                           type="text"
                           id="full_name"
-                          value={formData.full_name}
                           onChange={(e) =>
                             setFormData({
                               ...formData,
@@ -593,7 +613,6 @@ export default function UsersTable() {
                             <Input
                               type="text"
                               className="pl-[62px]"
-                              value={formData.email}
                               onChange={(e) =>
                                 setFormData({
                                   ...formData,
@@ -615,7 +634,6 @@ export default function UsersTable() {
                       <div>
                         <Label>Phone</Label>
                         <PhoneInput
-                          value={formData.phone}
                           selectPosition="start"
                           countries={countries}
                           onChange={handlePhoneNumberChange}
@@ -645,7 +663,6 @@ export default function UsersTable() {
                           <div className="relative">
                             <Input
                               type={showPinCode ? "text" : "password"}
-                              value={formData.pin_code}
                               onChange={(e) =>
                                 setFormData({
                                   ...formData,
@@ -680,7 +697,7 @@ export default function UsersTable() {
                             </h1>
                             <Switch
                               label={isactive ? "ON" : "OFF"}
-                              defaultChecked={true}
+                              defaultChecked={isactive}
                               onChange={handleActiveChange}
                             />
                           </div>
@@ -691,7 +708,7 @@ export default function UsersTable() {
                             </h1>
                             <Switch
                               label={isBlocked ? "ON" : "OFF"}
-                              defaultChecked={false}
+                              defaultChecked={!isBlocked}
                               onChange={handleBlockChange}
                             />
                           </div>
