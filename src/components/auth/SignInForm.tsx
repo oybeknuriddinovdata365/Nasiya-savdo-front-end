@@ -20,7 +20,7 @@ export default function SignInForm() {
     e.preventDefault();
     setError("");
     setIsLoading(true);
-
+    console.log(username, password);
     try {
       const response = await axios.post(API + "/admin/login", {
         username: username,
@@ -32,7 +32,6 @@ export default function SignInForm() {
       localStorage.setItem("user_id", data.admin.id);
       // AuthContext orqali login
       await login(data.access_token, data.refresh_token);
-
       // Dashboardga yo'naltirish
       navigate("/");
     } catch (err) {

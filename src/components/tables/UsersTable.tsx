@@ -449,7 +449,7 @@ export default function UsersTable() {
   return (
     <div className="flex  flex-col gap-5">
       <div className="flex justify-between items-center">
-        <h1 className="text-[20px] dark:text-white">Users</h1>
+        <h1 className="text-[20px] dark:text-white">Userlar</h1>
         <Button onClick={openModal} size="sm">
           User qo'shish
         </Button>

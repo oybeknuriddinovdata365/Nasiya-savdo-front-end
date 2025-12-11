@@ -4,7 +4,7 @@ import { Modal } from "../ui/modal";
 import Button from "../ui/button/Button";
 import Input from "../form/input/InputField";
 import Label from "../form/Label";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { EyeCloseIcon, EyeIcon } from "../../icons";
 import { useAuth } from "../../context/AuthContext";
 import axios from "axios";
@@ -16,43 +16,59 @@ interface FormData {
   password: string;
 }
 
+interface ErrorType {
+  username?: string;
+  phone_number?: string;
+  password?: string;
+}
+
 export default function UserMetaCard() {
   const API = import.meta.env.VITE_API_URL;
   const { isOpen, openModal, closeModal } = useModal();
   const { user } = useAuth();
 
-  const [formData, setFormData] = useState<FormData>({
+  const [localUser, setLocalUser] = useState({
     username: user?.username ?? "",
     phone_number: user?.phone_number ?? "+998",
+  });
+
+  const [formData, setFormData] = useState<FormData>({
+    username: localUser.username,
+    phone_number: localUser.phone_number,
     password: "",
   });
 
-  interface ErrorType {
-    username?: string;
-    phone_number?: string;
-    password?: string;
-  }
   const [errors, setErrors] = useState<ErrorType>({});
+  const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setFormData({
+        username: localUser.username,
+        phone_number: localUser.phone_number,
+        password: "",
+      });
+      setErrors({});
+    }
+  }, [isOpen, localUser]);
+
   const validate = (): boolean => {
     const newErrors: ErrorType = {};
 
-    // Username
-
     if (formData.username.length < 5) {
       newErrors.username =
-        "Username kamida 5 ta qiymatdan iborat bo'lishi kerak";
+        "Username kamida 5 ta belgidan iborat bo'lishi kerak";
     }
 
-    // Telefon
     if (
-      !formData.phone_number?.startsWith("+998") ||
+      !formData.phone_number.startsWith("+998") ||
       formData.phone_number.length !== 13
     ) {
       newErrors.phone_number =
         "Telefon raqam +998 bilan boshlanib, 13 belgidan iborat bo'lishi kerak";
     }
 
-    if (formData.password?.trim().length > 0) {
+    if (formData.password.trim().length > 0) {
       const strongPass = /^(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
       if (!strongPass.test(formData.password)) {
         newErrors.password =
@@ -60,48 +76,50 @@ export default function UserMetaCard() {
       }
     }
 
-    // State-ga qo‘shamiz
     setErrors(newErrors);
-
-    // Xatolik bo‘lmasa true qaytaradi
     return Object.keys(newErrors).length === 0;
   };
 
   const handleUpdateUser = async (): Promise<void> => {
-    try {
-      const errors = validate();
-      if (Object.keys(errors).length > 0) {
-        return;
-      }
+    if (!validate()) return;
 
+    try {
+      const id = localStorage.getItem("user_id");
       const payload: Partial<FormData> = {
         username: formData.username,
         phone_number: formData.phone_number,
       };
-      if (formData.password.trim()) {
-        payload.password = formData.password;
-      }
-      const id = localStorage.getItem("user_id");
+      if (formData.password.trim()) payload.password = formData.password;
+
       await axios.patch(`${API}/admin/${id}`, payload, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("access_token")}`,
         },
       });
+
+      setLocalUser({
+        username: formData.username,
+        phone_number: formData.phone_number,
+      });
       toast.success("Admin ma'lumotlari yangilandi");
       closeModal();
-    } catch (error) {
-      console.log("Update error:", error);
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+    } catch (err) {
+      console.error("Update error:", err);
+      toast.error("Yangilashda xatolik yuz berdi");
     }
   };
+
   const handleSaveClick = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate()) return;
     handleUpdateUser();
   };
-  const [showPassword, setShowPassword] = useState(false);
 
   return (
     <>
+      {/* CARD */}
       <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
         <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex flex-col items-center w-full gap-6 xl:flex-row">
@@ -110,14 +128,14 @@ export default function UserMetaCard() {
             </div>
 
             <div>
-              <h4 className="mb-2 text-lg font-semibold text-center  text-gray-800 dark:text-white/90 xl:text-left">
-                {user?.username} |{" "}
+              <h4 className="mb-2 text-lg font-semibold text-center text-gray-800 dark:text-white/90 xl:text-left">
+                {localUser.username} |{" "}
                 {user?.role
-                  ? user.role.charAt(0).toUpperCase() + user?.role.slice(1)
+                  ? user.role.charAt(0).toUpperCase() + user.role.slice(1)
                   : "UserRole"}
               </h4>
               <h1 className="text-sm text-gray-600 text-center xl:text-start">
-                {user?.phone_number}
+                {localUser.phone_number}
               </h1>
             </div>
           </div>
@@ -154,6 +172,7 @@ export default function UserMetaCard() {
                     <p className="text-red-500 text-sm">{errors.username}</p>
                   )}
                 </div>
+
                 <div>
                   <Label>Telefon Raqam</Label>
                   <Input
@@ -169,36 +188,32 @@ export default function UserMetaCard() {
                     </p>
                   )}
                 </div>
-                <div>
-                  <div className="col-span-2">
-                    <Label>Parol</Label>
-                    <div className="relative">
-                      <Input
-                        type={showPassword ? "text" : "password"}
-                        placeholder="Yangi parol kiriting"
-                        value={formData.password}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            password: e.target.value,
-                          })
-                        }
-                      />
-                      <span
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer"
-                      >
-                        {showPassword ? (
-                          <EyeIcon className="size-5 fill-gray-500" />
-                        ) : (
-                          <EyeCloseIcon className="size-5 fill-gray-500" />
-                        )}
-                      </span>
-                    </div>
-                    {errors.password && (
-                      <p className="text-red-500 text-sm">{errors.password}</p>
-                    )}
+
+                <div className="col-span-2">
+                  <Label>Parol</Label>
+                  <div className="relative">
+                    <Input
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Yangi parol kiriting"
+                      value={formData.password}
+                      onChange={(e) =>
+                        setFormData({ ...formData, password: e.target.value })
+                      }
+                    />
+                    <span
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer"
+                    >
+                      {showPassword ? (
+                        <EyeIcon className="size-5 fill-gray-500" />
+                      ) : (
+                        <EyeCloseIcon className="size-5 fill-gray-500" />
+                      )}
+                    </span>
                   </div>
+                  {errors.password && (
+                    <p className="text-red-500 text-sm">{errors.password}</p>
+                  )}
                 </div>
               </div>
             </div>

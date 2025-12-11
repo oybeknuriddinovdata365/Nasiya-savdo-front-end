@@ -1,13 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
 
-import {
-  ChevronDownIcon,
-  GridIcon,
-  HorizontaLDots,
-  UserIcon,
-} from "../icons";
+import { ChevronDownIcon, GridIcon, HorizontaLDots, UserIcon } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
+import { useAuth } from "../context/AuthContext";
 
 type NavItem = {
   name: string;
@@ -24,14 +20,20 @@ const navItems: NavItem[] = [
   },
 ];
 
-const navTables: NavItem[] = [
+const navTablesForSuperadmin: NavItem[] = [
+  { name: "Users Table", icon: <UserIcon />, path: "/users-table" },
+  { name: "Admins Table", icon: <UserIcon />, path: "/admins-table" },
+];
+const navTablesForAdmin: NavItem[] = [
   { name: "Users Table", icon: <UserIcon />, path: "/users-table" },
 ];
 
 const AppSidebar: React.FC = () => {
+  const userRole = useAuth().user?.role.toLowerCase();
+  const navTables =
+    userRole === "superadmin" ? navTablesForSuperadmin : navTablesForAdmin;
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const location = useLocation();
-
   const [openSubmenu, setOpenSubmenu] = useState<{
     type: "main" | "others";
     index: number;

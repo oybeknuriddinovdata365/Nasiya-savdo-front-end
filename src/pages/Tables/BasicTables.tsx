@@ -1,6 +1,7 @@
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
 import UsersTable from "../../components/tables/UsersTable";
+import AdminTable from "../../components/tables/AdminsTable";
 
 export default function BasicTables() {
   return (
@@ -9,6 +10,7 @@ export default function BasicTables() {
       <div className="space-y-6">
         <ComponentCard title="Basic Table 1">
           <UsersTable />
+          <AdminTable/>
         </ComponentCard>
       </div>
     </>
