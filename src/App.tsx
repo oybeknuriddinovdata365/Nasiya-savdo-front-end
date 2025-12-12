@@ -10,6 +10,7 @@ import ProtectedRoute from "./components/auth/ProtectedRoute";
 import PublicRoute from "./components/auth/PublicRoute";
 import NotAccess from "./pages/OtherPage/NotAccess";
 import AdminTable from "./components/tables/AdminsTable";
+import ProtectedRouteAdmin from "./components/Route/ProtectedAdmin";
 
 export default function App() {
   return (
@@ -26,7 +27,14 @@ export default function App() {
             <Route element={<AppLayout />}>
               <Route index path="/" element={<Home />} />
 
-              <Route path="/profile" element={<UserProfiles />} />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRouteAdmin>
+                    <UserProfiles />
+                  </ProtectedRouteAdmin>
+                }
+              />
               <Route path="/users-table" element={<UsersTable />} />
               <Route path="/admins-table" element={<AdminTable />} />
             </Route>

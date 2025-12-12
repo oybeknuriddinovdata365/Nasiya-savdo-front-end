@@ -6,6 +6,7 @@ import {
   useEffect,
   ReactNode,
 } from "react";
+import axiosInstance from "../api/AxiosInstance";
 
 export type UserRole = "superadmin" | "admin";
 
@@ -37,31 +38,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem("access_token", accessToken);
     localStorage.setItem("refresh_token", refreshToken);
 
-    await fetchUser(accessToken);
+    await fetchUser();
   };
 
   // GET USER
-  const fetchUser = async (token: string) => {
+  const fetchUser = async () => {
     try {
       const loggedInUserId = localStorage.getItem("user_id");
-      if (!loggedInUserId) {
-        logout();
-        return;
-      }
 
-      const response = await axios.get(`${API}/admin/${loggedInUserId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      if (!loggedInUserId) return logout();
 
-      const fetchedUser: User = response.data.data;
-
-      if (fetchedUser.id === Number(loggedInUserId)) {
-        setUser(fetchedUser);
-      } else {
-        logout();
-      }
+      const res = await axiosInstance.get(`/admin/${loggedInUserId}`);
+      setUser(res.data.data);
     } catch (err) {
       console.error("Fetch user error:", err);
       logout();
@@ -97,7 +85,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const token = localStorage.getItem("access_token");
     if (token) {
-      fetchUser(token).finally(() => setIsLoading(false));
+      fetchUser().finally(() => setIsLoading(false));
     } else {
       setIsLoading(false);
     }

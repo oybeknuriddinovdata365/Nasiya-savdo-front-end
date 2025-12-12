@@ -248,7 +248,7 @@ const AppSidebar: React.FC = () => {
               )}
               {isExpanded || isHovered || isMobileOpen ? (
                 <h1 className="h-15 flex items-center justify-center text-lg font-semibold tracking-widest ml-3 dark:text-white">
-                  SuperAdmin
+                  {userRole ? userRole.charAt(0).toUpperCase() + userRole.slice(1) : "Admin Panel"}
                 </h1>
               ) : (
                 <div className="h-15 "></div>

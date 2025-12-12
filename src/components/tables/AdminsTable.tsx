@@ -161,7 +161,9 @@ export default function UsersTable() {
           ? response.data.data
           : [response.data.data];
 
-        usersArray = usersArray.filter((user: Admin) => user.role?.toLowerCase() !== "superadmin");
+        usersArray = usersArray.filter(
+          (user: Admin) => user.role?.toLowerCase() !== "superadmin"
+        );
 
         setUsersData(usersArray);
       } catch (err) {
@@ -186,7 +188,6 @@ export default function UsersTable() {
           "Parol kamida 8 ta belgidan va Kuchli bo'lishi kerak. Masalan: Pass1!";
       }
     }
-    console.log(formData);
     if (
       !formData.phone_number.startsWith("+998") ||
       formData.phone_number.length !== 13
@@ -274,9 +275,9 @@ export default function UsersTable() {
   return (
     <div className="flex  flex-col gap-5">
       <div className="flex justify-between items-center">
-        <h1 className="text-[20px] dark:text-white">Userlar</h1>
+        <h1 className="text-[20px] dark:text-white">Adminlar</h1>
         <Button onClick={openModal} size="sm">
-          User qo'shish
+          Admin qo'shish
         </Button>
       </div>
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
@@ -345,7 +346,7 @@ export default function UsersTable() {
                       </TableCell>
 
                       {/* Actions */}
-                      <TableCell className="flex mt-4 px-5 justify-center">
+                      <TableCell className="flex mt-2 mb-2 px-5 justify-center">
                         <Button size="sm" onClick={() => handleEdit(user)}>
                           <PencilIcon fontSize={18} />
                         </Button>
@@ -378,7 +379,9 @@ export default function UsersTable() {
                 <div className="custom-scrollbar h-[500px] overflow-y-auto px-2 pb-3">
                   <div className="mt-3">
                     <h5 className="mb-5 text-lg md:text-[25px] font-medium text-gray-800 dark:text-white/90 lg:mb-6">
-                      {editUserId ? "Userni tahrirlash" : "Yangi User qo'shish"}
+                      {editUserId
+                        ? "Adminni tahrirlash"
+                        : "Yangi Admin qo'shish"}
                     </h5>
                     <div className="grid grid-cols-1  sm:grid-cols-2 gap-3 sm:space-y-2.5">
                       <div>
@@ -475,9 +478,14 @@ export default function UsersTable() {
               </div>
               <div className="mt-5">
                 <p className="dark:text-white/70 text-sm text-black/70">
-                  Agar hozir bu buyruqni tasdiqlasangiz tanlangan ma'lumot
-                  o'chib ketadi va uni orqaga qaytarishni iloji yo'q bo'ladi.
-                  Rostdan ham buni tasdiqlaysizmi?
+                  Buyruqni Tadiqlaysizmi? Siz rostdan ham{" "}
+                  <span className="text-black dark:text-white bg-red-500/20 text-[16px]">
+                    {
+                      usersData.find((user) => user.id === deleteUserId)
+                        ?.username
+                    }{" "}
+                  </span>
+                  ni o'chirmoqchimisiz? tasdiqlangan buyruqni ortga qaytarib bo'lmaydi!
                 </p>
               </div>
               <div className="flex justify-end gap-3 mt-4">

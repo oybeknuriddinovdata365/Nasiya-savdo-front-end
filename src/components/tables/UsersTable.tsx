@@ -16,6 +16,7 @@ import {
   EnvelopeIcon,
   EyeCloseIcon,
   EyeIcon,
+  InfoIcon,
   PencilIcon,
   TrashBinIcon,
 } from "../../icons";
@@ -707,6 +708,10 @@ export default function UsersTable() {
                           countries={countries}
                           onChange={handlePhoneNumberChange}
                         />
+                        <p className="dark:text-gray-400 text-gray-600 text-[13px] flex gap-2 items-center">
+                          <InfoIcon className="text-[25px]" /> Telefon Raqam
+                          Kodlari togri kiritilishi kerak (masalan: 97, 93, 94)
+                        </p>
                         {errors.phone && (
                           <p className="text-red-500 text-[12px] mt-1">
                             * {errors.phone}

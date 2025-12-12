@@ -189,7 +189,7 @@ export default function UserMetaCard() {
                   )}
                 </div>
 
-                <div className="col-span-2">
+                <div className="col-span-1">
                   <Label>Parol</Label>
                   <div className="relative">
                     <Input
