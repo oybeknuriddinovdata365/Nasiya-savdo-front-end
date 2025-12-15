@@ -24,12 +24,12 @@ import toast from "react-hot-toast";
 import axios from "axios";
 import { SkeletonRow } from "../common/SkeletonRow";
 import { Admin } from "../common/types";
+import { useAuth } from "../../context/AuthContext";
 interface ErrorType {
   username?: string;
   password?: string;
   phone?: string;
 }
-
 export default function UsersTable() {
   const [formData, setFormData] = useState<{
     username: string;
@@ -87,9 +87,20 @@ export default function UsersTable() {
     try {
       const token = localStorage.getItem("access_token");
       if (!token || !editUserId) return;
+      const payload: Partial<typeof formData> = {};
+      if (formData.username) payload.username = formData.username;
+      if (formData.phone_number) payload.phone_number = formData.phone_number;
+      if (formData.password) payload.password = formData.password;
 
+      const res = await axios.patch(`${API}/admin/${editUserId}`, payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      console.log(res);
       toast.success("Admin muvaffaqqiyatli yangilandi!");
-
+      const updatedUser = res.data.data;
+      setUsersData((prev) =>
+        prev.map((u) => (u.id === editUserId ? updatedUser : u))
+      );
       closeModal();
     } catch (error: any) {
       toast.error("Yangilashda xatolik yuz berdi!");
@@ -144,7 +155,7 @@ export default function UsersTable() {
       setIsLoading(false);
     }
   };
-
+  const { user } = useAuth();
   const API = import.meta.env.VITE_API_URL;
   useEffect(() => {
     const fetchUsers = async () => {
@@ -179,7 +190,6 @@ export default function UsersTable() {
   const CreateValidate = () => {
     const newErrors: ErrorType = {};
     const isEdit = editUserId !== null;
-
     if (!isEdit || formData.password.trim().length > 0) {
       const passwordRegex =
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&.])[A-Za-z\d@$!%*?&.]{8,}$/;
@@ -196,7 +206,8 @@ export default function UsersTable() {
     } else if (
       usersData.some(
         (u) => u.phone_number === formData.phone_number && u.id !== editUserId
-      )
+      ) ||
+      formData.phone_number === user?.phone_number
     ) {
       newErrors.phone = "Telefon raqam allaqachon mavjud";
     }
@@ -204,12 +215,16 @@ export default function UsersTable() {
     if (
       usersData.some(
         (u) => u.username === formData.username && u.id !== editUserId
-      )
+      ) ||
+      formData.username === user?.username
     ) {
       newErrors.username = "Login allaqachon mavjud";
     }
     if (!formData.username) {
       newErrors.username = "Login kiritilmadi";
+    }
+    if(formData.username.trim().length < 3){
+      newErrors.username = "Login Kamida 3 ta belgidan iborat bo'lishi kerak"
     }
 
     setErrors(newErrors);
@@ -485,7 +500,8 @@ export default function UsersTable() {
                         ?.username
                     }{" "}
                   </span>
-                  ni o'chirmoqchimisiz? tasdiqlangan buyruqni ortga qaytarib bo'lmaydi!
+                  ni o'chirmoqchimisiz? tasdiqlangan buyruqni ortga qaytarib
+                  bo'lmaydi!
                 </p>
               </div>
               <div className="flex justify-end gap-3 mt-4">

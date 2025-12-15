@@ -5,7 +5,7 @@ import Button from "../ui/button/Button";
 import Input from "../form/input/InputField";
 import Label from "../form/Label";
 import { useState, useEffect } from "react";
-import { EyeCloseIcon, EyeIcon } from "../../icons";
+import { EyeCloseIcon, EyeIcon, InfoIcon } from "../../icons";
 import { useAuth } from "../../context/AuthContext";
 import axios from "axios";
 import toast from "react-hot-toast";
@@ -26,7 +26,6 @@ export default function UserMetaCard() {
   const API = import.meta.env.VITE_API_URL;
   const { isOpen, openModal, closeModal } = useModal();
   const { user } = useAuth();
-
   const [localUser, setLocalUser] = useState({
     username: user?.username ?? "",
     phone_number: user?.phone_number ?? "+998",
@@ -44,8 +43,8 @@ export default function UserMetaCard() {
   useEffect(() => {
     if (isOpen) {
       setFormData({
-        username: localUser.username,
-        phone_number: localUser.phone_number,
+        username: "",
+        phone_number: "",
         password: "",
       });
       setErrors({});
@@ -54,20 +53,19 @@ export default function UserMetaCard() {
 
   const validate = (): boolean => {
     const newErrors: ErrorType = {};
-
-    if (formData.username.length < 5) {
-      newErrors.username =
-        "Username kamida 5 ta belgidan iborat bo'lishi kerak";
+    if (formData.username) {
+      if (formData.username.length < 3) {
+        newErrors.username = "Login kamida 3 ta belgidan iborat bo'lishi kerak";
+      }
     }
-
-    if (
-      !formData.phone_number.startsWith("+998") ||
-      formData.phone_number.length !== 13
-    ) {
-      newErrors.phone_number =
-        "Telefon raqam +998 bilan boshlanib, 13 belgidan iborat bo'lishi kerak";
+    if (formData.phone_number) {
+      if (
+        !formData.phone_number.startsWith("+998") ||
+        formData.phone_number.length !== 13
+      ) {
+        newErrors.phone_number = "Telefon raqam noto'g'ri formatda kiritildi";
+      }
     }
-
     if (formData.password.trim().length > 0) {
       const strongPass = /^(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
       if (!strongPass.test(formData.password)) {
@@ -85,11 +83,28 @@ export default function UserMetaCard() {
 
     try {
       const id = localStorage.getItem("user_id");
-      const payload: Partial<FormData> = {
-        username: formData.username,
-        phone_number: formData.phone_number,
-      };
-      if (formData.password.trim()) payload.password = formData.password;
+
+      const payload: Partial<FormData> = {};
+
+      if (formData.username.trim()) {
+        payload.username = formData.username.trim();
+      }
+
+      if (
+        formData.phone_number.trim() &&
+        formData.phone_number !== localUser.phone_number
+      ) {
+        payload.phone_number = formData.phone_number.trim();
+      }
+
+      if (formData.password.trim()) {
+        payload.password = formData.password.trim();
+      }
+      closeModal();
+      if (Object.keys(payload).length === 0) {
+        toast.error("Hech qanday o'zgarish kiritilmadi");
+        return;
+      }
 
       await axios.patch(`${API}/admin/${id}`, payload, {
         headers: {
@@ -98,17 +113,20 @@ export default function UserMetaCard() {
       });
 
       setLocalUser({
-        username: formData.username,
-        phone_number: formData.phone_number,
+        username: payload.username ?? localUser.username,
+        phone_number: payload.phone_number ?? localUser.phone_number,
       });
+
       toast.success("Admin ma'lumotlari yangilandi");
-      closeModal();
+
       setTimeout(() => {
         window.location.reload();
       }, 2000);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Update error:", err);
-      toast.error("Yangilashda xatolik yuz berdi");
+      toast.error(
+        err?.response?.data?.message || "Kiritilgan Admin ma'lumotlari mavjud"
+      );
     }
   };
 
@@ -154,16 +172,17 @@ export default function UserMetaCard() {
         <div className="no-scrollbar w-full max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
           <form className="flex flex-col">
             <div className="custom-scrollbar h-[450px] overflow-y-auto px-2 pb-3">
-              <h5 className="mb-6 text-lg font-medium text-gray-800 dark:text-white/90">
+              <h5 className="mb-1 text-lg font-medium text-gray-800 dark:text-white/90">
                 Tahrirlash
               </h5>
-
+              <span className="text-gray-600 dark:text-gray-400 flex gap-2 text-sm mb-6">
+                <InfoIcon /> Yangilanmaydigan ustunni bo'sh qoldiring!
+              </span>
               <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
                 <div>
                   <Label>Username</Label>
                   <Input
                     type="text"
-                    value={formData.username}
                     onChange={(e) =>
                       setFormData({ ...formData, username: e.target.value })
                     }
@@ -177,7 +196,6 @@ export default function UserMetaCard() {
                   <Label>Telefon Raqam</Label>
                   <Input
                     type="text"
-                    value={formData.phone_number}
                     onChange={(e) =>
                       setFormData({ ...formData, phone_number: e.target.value })
                     }
@@ -217,7 +235,6 @@ export default function UserMetaCard() {
                 </div>
               </div>
             </div>
-
             <div className="flex items-center gap-3 px-2 mt-6 lg:justify-end">
               <Button size="sm" variant="outline" onClick={closeModal}>
                 Yopish
