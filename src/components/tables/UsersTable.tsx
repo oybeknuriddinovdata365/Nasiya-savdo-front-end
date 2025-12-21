@@ -156,7 +156,6 @@ export default function UsersTable() {
       if (!token || !editUserId) return;
       const fd = new FormData();
 
-      console.log(formData);
       if (formData.full_name) {
         fd.append("full_name", formData.full_name);
       }
@@ -275,8 +274,6 @@ export default function UsersTable() {
         const response = await axios.get(`${API}/store`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-
-        console.log("API response:", response.data);
 
         if (Array.isArray(response.data.data)) {
           setUsersData(response.data.data);
@@ -458,14 +455,16 @@ export default function UsersTable() {
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
         <div className="max-w-full overflow-x-auto">
           {isLoading ? (
-            <div className="w-full">
-              <SkeletonRow />
-              <SkeletonRow />
-              <SkeletonRow />
-              <SkeletonRow />
-              <SkeletonRow />
-              <SkeletonRow />
-            </div>
+            <Table>
+              <TableBody>
+                <SkeletonRow />
+                <SkeletonRow />
+                <SkeletonRow />
+                <SkeletonRow />
+                <SkeletonRow />
+                <SkeletonRow />
+              </TableBody>
+            </Table>
           ) : (
             <Table>
               {/* Header */}
