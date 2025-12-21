@@ -95,7 +95,6 @@ export default function UsersTable() {
       const res = await axios.patch(`${API}/admin/${editUserId}`, payload, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log(res);
       toast.success("Admin muvaffaqqiyatli yangilandi!");
       const updatedUser = res.data.data;
       setUsersData((prev) =>
@@ -223,8 +222,8 @@ export default function UsersTable() {
     if (!formData.username) {
       newErrors.username = "Login kiritilmadi";
     }
-    if(formData.username.trim().length < 3){
-      newErrors.username = "Login Kamida 3 ta belgidan iborat bo'lishi kerak"
+    if (formData.username.trim().length < 3) {
+      newErrors.username = "Login Kamida 3 ta belgidan iborat bo'lishi kerak";
     }
 
     setErrors(newErrors);
@@ -298,14 +297,16 @@ export default function UsersTable() {
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
         <div className="max-w-full overflow-x-auto">
           {isLoading ? (
-            <div className="w-full">
-              <SkeletonRow />
-              <SkeletonRow />
-              <SkeletonRow />
-              <SkeletonRow />
-              <SkeletonRow />
-              <SkeletonRow />
-            </div>
+            <Table>
+              <TableBody>
+                <SkeletonRow />
+                <SkeletonRow />
+                <SkeletonRow />
+                <SkeletonRow />
+                <SkeletonRow />
+                <SkeletonRow />
+              </TableBody>
+            </Table>
           ) : (
             <Table>
               {/* Header */}

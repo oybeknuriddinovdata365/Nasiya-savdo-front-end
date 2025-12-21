@@ -20,7 +20,6 @@ export default function SignInForm() {
     e.preventDefault();
     setError("");
     setIsLoading(true);
-    console.log(username, password);
     try {
       const response = await axios.post(API + "/admin/login", {
         username: username,

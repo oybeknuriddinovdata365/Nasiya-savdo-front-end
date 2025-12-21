@@ -17,9 +17,7 @@ export default function ProtectedRouteAdmin({ children }: Props) {
       </div>
     );
   }
-  console.log(userRole);
   if (userRole !== "admin") {
-    console.log("WWWW");
     return <Navigate to="/not-access" replace />;
   }
 

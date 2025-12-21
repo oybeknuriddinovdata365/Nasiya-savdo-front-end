@@ -13,10 +13,14 @@ type Debt = {
 type DashboardResponse = {
   debts: Debt[];
 };
+type Period = "day" | "month" | "year";
 
-export default function StatisticsChart() {
+interface Props {
+  period: Period;
+}
+
+export default function StatisticsChart({period}: Props) {
   const [data, setData] = useState<DashboardResponse | null>(null);
-
   const token = localStorage.getItem("access_token");
 
   useEffect(() => {
@@ -34,9 +38,8 @@ export default function StatisticsChart() {
       }
     };
     fetchData();
-  }, []);
+  }, [period]);
 
-  // ===== OYLIK HISOB =====
   const monthlyGiven = new Array(12).fill(0);
   const monthlyPaid = new Array(12).fill(0);
   const monthlyLate = new Array(12).fill(0);
@@ -55,6 +58,29 @@ export default function StatisticsChart() {
       monthlyLate[month] += remaining;
     }
   });
+
+  // const monthlyGiven = [
+  //   2000000, // Jan
+  //   3000000, // Feb
+  //   1500000, // Mar
+  //   4000000, // Apr
+  //   2500000, // May
+  //   5000000, // Jun
+  //   0,
+  //   0,
+  //   0,
+  //   0,
+  //   0,
+  //   0,
+  // ];
+
+  // const monthlyPaid = [
+  //   1000000, 2500000, 800000, 3000000, 2000000, 3500000, 0, 0, 0, 0, 0, 0,
+  // ];
+
+  // const monthlyLate = [
+  //   1000000, 500000, 700000, 1000000, 500000, 1500000, 0, 0, 0, 0, 0, 0,
+  // ];
 
   const series = [
     {
