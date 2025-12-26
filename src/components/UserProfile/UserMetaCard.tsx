@@ -196,7 +196,7 @@ export default function UserMetaCard() {
                 <div>
                   <Label>Telefon Raqam</Label>
                   <Input
-                  placeholder="yangi telefon raqam"
+                    placeholder="yangi telefon raqam"
                     type="text"
                     onChange={(e) =>
                       setFormData({ ...formData, phone_number: e.target.value })
@@ -213,7 +213,7 @@ export default function UserMetaCard() {
                   <Label>Parol</Label>
                   <div className="relative">
                     <Input
-                      type={showPassword ? "text" : "password"}
+                      mask={!showPassword}
                       placeholder="Yangi parol kiriting"
                       value={formData.password}
                       onChange={(e) =>

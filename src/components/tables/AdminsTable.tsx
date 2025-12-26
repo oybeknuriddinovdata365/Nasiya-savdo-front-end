@@ -31,6 +31,10 @@ interface ErrorType {
   phone?: string;
 }
 export default function UsersTable() {
+  const [originalData, setOriginalData] = useState<{
+    username: string;
+    phone_number: string;
+  } | null>(null);
   const [formData, setFormData] = useState<{
     username: string;
     password: string;
@@ -55,6 +59,24 @@ export default function UsersTable() {
 
   const [showPassword, setShowPassword] = useState(false);
   const { isOpen, openModal, closeModal } = useModal();
+  const getChangedFields = () => {
+    if (!originalData) return {};
+
+    const payload: Partial<typeof formData> = {};
+
+    if (formData.username !== originalData.username) {
+      payload.username = formData.username;
+    }
+
+    if (formData.phone_number !== originalData.phone_number) {
+      payload.phone_number = formData.phone_number;
+    }
+
+    if (formData.password.trim().length > 0) {
+      payload.password = formData.password;
+    }
+    return payload;
+  };
 
   const handleCreateUser = async () => {
     try {
@@ -86,12 +108,15 @@ export default function UsersTable() {
   const handleUpdateUser = async () => {
     try {
       const token = localStorage.getItem("access_token");
-      if (!token || !editUserId) return;
-      const payload: Partial<typeof formData> = {};
+      if (!token || !editUserId || !originalData) return;
+      const payload = getChangedFields();
       if (formData.username) payload.username = formData.username;
       if (formData.phone_number) payload.phone_number = formData.phone_number;
       if (formData.password) payload.password = formData.password;
-
+      if (Object.keys(payload).length === 0) {
+        toast.error("Hech qanday o'zgarish kiritilmadi");
+        return;
+      }
       const res = await axios.patch(`${API}/admin/${editUserId}`, payload, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -231,47 +256,66 @@ export default function UsersTable() {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+  const isChanged = <T,>(newVal: T, oldVal: T) => newVal !== oldVal;
 
   const FetchValidate = () => {
+    if (!originalData) return true;
+
     const newErrors: ErrorType = {};
 
-    if (formData.password && formData.password.trim().length > 0) {
-      const passwordRegex =
-        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&.])[A-Za-z\d@$!%*?&.]{8,}$/;
-      if (!passwordRegex.test(formData.password)) {
-        newErrors.password =
-          "Parol kamida 8 ta belgidan va kuchli bo'lishi kerak. Masalan: Pass111!";
+    // USERNAME
+    if (
+      formData.username &&
+      isChanged(formData.username, originalData.username)
+    ) {
+      if (formData.username.length < 3) {
+        newErrors.username = "Login kamida 3 ta belgidan iborat bo'lishi kerak";
+      }
+
+      if (
+        usersData.some(
+          (u) => u.username === formData.username && u.id !== editUserId
+        )
+      ) {
+        newErrors.username = "Login allaqachon mavjud";
       }
     }
 
-    if (formData.phone_number) {
+    // PHONE
+    if (
+      formData.phone_number &&
+      isChanged(formData.phone_number, originalData.phone_number)
+    ) {
       if (
         !formData.phone_number.startsWith("+998") ||
         formData.phone_number.length !== 13
       ) {
-        newErrors.phone = "Telefon raqam noto'g'ri formatda kiritildi";
+        newErrors.phone = "Telefon raqam noto'g'ri formatda";
       } else if (
         !/^\+998(90|91|93|94|95|97|88|99)/.test(formData.phone_number)
       ) {
-        newErrors.phone = "Telefon raqam kodi noto'g'ri";
+        newErrors.phone = "Telefon raqam kodi notogri";
       } else if (
-        usersData.some((u) => u.phone_number === formData.phone_number)
+        usersData.some(
+          (u) => u.phone_number === formData.phone_number && u.id !== editUserId
+        )
       ) {
         newErrors.phone = "Telefon raqam allaqachon mavjud";
       }
     }
 
-    if (formData.username) {
-      if (formData.username.length < 3) {
-        newErrors.username = "Login kamida 3 ta belgidan iborat bo'lishi kerak";
-      }
-      if (usersData.some((u) => u.username === formData.username)) {
-        newErrors.username = "Login allaqachon mavjud";
+    // PASSWORD (faqat yozilgan bo‘lsa)
+    if (formData.password.trim().length > 0) {
+      const passwordRegex =
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&.]).{8,}$/;
+
+      if (!passwordRegex.test(formData.password)) {
+        newErrors.password =
+          "Parol kamida 8 ta belgidan va kuchli bo‘lishi kerak";
       }
     }
 
     setErrors(newErrors);
-
     return Object.keys(newErrors).length === 0;
   };
 
@@ -279,9 +323,13 @@ export default function UsersTable() {
   const handleEdit = (user: Admin) => {
     setEditUserId(user.id);
     setFormData({
-      username: "",
+      username: user.username,
       password: "",
-      phone_number: "",
+      phone_number: user.phone_number,
+    });
+    setOriginalData({
+      username: user.username,
+      phone_number: user.phone_number,
     });
     openModal();
   };
@@ -411,6 +459,7 @@ export default function UsersTable() {
                         <Input
                           type="text"
                           id="login"
+                          value={formData.username}
                           onChange={(e) =>
                             setFormData({
                               ...formData,
@@ -429,7 +478,9 @@ export default function UsersTable() {
                         <div>
                           <div className="relative">
                             <Input
-                              type={showPassword ? "text" : "password"}
+                              mask={!showPassword}
+                              value={formData.password}
+                              placeholder="Yangi Parol"
                               onChange={(e) =>
                                 setFormData({
                                   ...formData,
@@ -460,6 +511,7 @@ export default function UsersTable() {
                       <div>
                         <Label>Telefon Raqam</Label>
                         <PhoneInput
+                          value={formData.phone_number ? formData.phone_number : "+998"}
                           selectPosition="start"
                           countries={countries}
                           onChange={handlePhoneNumberChange}

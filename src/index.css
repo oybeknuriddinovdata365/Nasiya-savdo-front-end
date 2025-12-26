@@ -5,6 +5,11 @@ layer(base);
 
 @custom-variant dark (&:is(.dark *));
 
+.password-mask {
+  -webkit-text-security: disc;
+  text-security: disc;
+}
+
 @theme {
   --font-*: initial;
   --font-outfit: Outfit, sans-serif;

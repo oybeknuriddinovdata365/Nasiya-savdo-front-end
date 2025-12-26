@@ -96,6 +96,17 @@ export default function UsersTable() {
   const [showPassword, setShowPassword] = useState(false);
   const [showPinCode, setShowPinCode] = useState(false);
   const { isOpen, openModal, closeModal } = useModal();
+  const [originalData, setOriginalData] = useState<{
+    login: string;
+    password: string;
+    full_name: string;
+    email: string;
+    phone: string;
+    file: File | null;
+    pin_code: string;
+    active: boolean;
+    blocked: boolean;
+  } | null>(null);
 
   const handleCreateUser = async () => {
     try {
@@ -151,55 +162,54 @@ export default function UsersTable() {
   };
 
   const handleUpdateUser = async () => {
-    try {
-      const token = localStorage.getItem("access_token");
-      if (!token || !editUserId) return;
-      const fd = new FormData();
+    if (!originalData || !editUserId) return;
 
-      if (formData.full_name) {
-        fd.append("full_name", formData.full_name);
-      }
-      if (formData.login) {
-        fd.append("login", formData.login);
-      }
-      if (formData.email) {
-        fd.append("email", formData.email);
-      }
-      if (formData.phone) {
-        fd.append("phone_number", formData.phone);
-      }
-      if (formData.pin_code) {
-        fd.append("pin_code", String(Number(formData.pin_code)));
-      }
-      if (formData.password) {
-        fd.append("password", formData.password);
-      }
-      if (formData.file instanceof File) {
-        fd.append("file", formData.file);
-      }
-      fd.append("is_active", formData.active ? "true" : "");
-      fd.append("is_blocked", formData.blocked ? "true" : "");
+    const token = localStorage.getItem("access_token");
+    const fd = new FormData();
 
-      const response = await axios.patch(`${API}/store/${editUserId}`, fd, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
-        },
-      });
+    if (isChanged(formData.login, originalData.login))
+      fd.append("login", formData.login);
 
-      toast.success("User muvaffaqqiyatli yangilandi!");
+    if (isChanged(formData.full_name, originalData.full_name))
+      fd.append("full_name", formData.full_name);
 
-      const updatedUser = response.data.data;
+    if (isChanged(formData.email, originalData.email))
+      fd.append("email", formData.email);
 
-      setUsersData((prev) =>
-        prev.map((u) => (u.id === editUserId ? updatedUser : u))
-      );
+    if (isChanged(formData.phone, originalData.phone))
+      fd.append("phone_number", formData.phone);
 
-      closeModal();
-    } catch (error: any) {
-      toast.error("Yangilashda xatolik yuz berdi!");
-      console.error("Update error:", error);
+    if (isChanged(formData.pin_code, originalData.pin_code))
+      fd.append("pin_code", formData.pin_code);
+
+    if (formData.password) fd.append("password", formData.password);
+
+    if (formData.file instanceof File) fd.append("file", formData.file);
+
+    fd.append("is_active", String(formData.active));
+
+    if (isChanged(formData.blocked, originalData.blocked))
+      fd.append("is_blocked", String(formData.blocked));
+
+    // 🔴 AGAR HECH NIMA YO‘Q BO‘LSA
+    if ([...fd.entries()].length === 0) {
+      toast.error("Hech qanday ozgarish kiritilmadi");
+      return;
     }
+
+    const response = await axios.patch(`${API}/store/${editUserId}`, fd, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    const updatedUser = response.data.data;
+
+    setUsersData((prev) =>
+      prev.map((u) => (u.id === editUserId ? updatedUser : u))
+    );
+
+    toast.success("User yangilandi");
   };
 
   const handleSave = (e: React.FormEvent) => {
@@ -217,10 +227,7 @@ export default function UsersTable() {
     setFormData(pustoyForm);
     closeModal();
   };
-  const countries = [
-    { code: "UZ", label: "+998" },
-    { code: "RU", label: "+7" },
-  ];
+  const countries = [{ code: "UZ", label: "+998" }];
   const handlePhoneNumberChange = (phoneNumber: string) => {
     setFormData({ ...formData, phone: phoneNumber });
   };
@@ -351,87 +358,96 @@ export default function UsersTable() {
     return Object.keys(newErrors).length === 0;
   };
 
+  const isChanged = (a: any, b: any) => a !== b;
+
   const FetchValidate = () => {
+    if (!originalData) return true;
+
     const newErrors: ErrorType = {};
 
-    // Parol tekshiruvi (faqat agar foydalanuvchi yangilamoqchi bo'lsa)
-    if (formData.password && formData.password.trim().length > 0) {
-      const passwordRegex =
-        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&.])[A-Za-z\d@$!%*?&.]{8,}$/;
-      if (!passwordRegex.test(formData.password)) {
-        newErrors.password =
-          "Parol kamida 8 ta belgidan va kuchli bo'lishi kerak. Masalan: Pass111!";
-      }
-    }
-    if (formData.full_name) {
-      if (formData.full_name.length < 3) {
-        newErrors.full_name =
-          "Ism Familiya kamida 3 ta belgidan iborat bo'lishi kerak";
-      }
-      // if
-    }
-
-    // Email tekshiruvi
-    if (formData.email) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(formData.email)) {
-        newErrors.email = "Email formati noto'g'ri kiritildi";
-      }
-      if (usersData.some((u) => u.email === formData.email)) {
-        newErrors.email = "Email allaqachon mavjud";
-      }
-    }
-
-    if (formData.phone) {
-      const uzPhoneRegex = /^\+998(90|91|93|94|95|97|88|99)\d{7}$/;
-
-      if (!uzPhoneRegex.test(formData.phone)) {
-        newErrors.phone = "Telefon raqam noto'g'ri formatda kiritildi";
-      } else if (usersData.some((u) => u.phone_number === formData.phone)) {
-        newErrors.phone = "Telefon raqam allaqachon mavjud";
-      }
-    }
-    if (formData.login) {
+    // LOGIN
+    if (isChanged(formData.login, originalData.login)) {
       if (formData.login.length < 3) {
-        newErrors.login = "Login kamida 3 ta belgidan iborat bo'lishi kerak";
+        newErrors.login = "Login kamida 3 ta belgidan iborat bo‘lishi kerak";
       }
-      if (usersData.some((u) => u.login === formData.login)) {
+      if (
+        usersData.some((u) => u.login === formData.login && u.id !== editUserId)
+      ) {
         newErrors.login = "Login allaqachon mavjud";
       }
     }
 
-    if (formData.pin_code) {
-      const pinCode = formData.pin_code.toString();
-      const pinRegex = /^\d{4}$/;
-      if (!pinRegex.test(pinCode)) {
-        newErrors.pin_code = "Pin kod 4 ta raqamdan iborat bo'lishi kerak";
+    // EMAIL
+    if (isChanged(formData.email, originalData.email)) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        newErrors.email = "Email formati noto‘g‘ri";
+      }
+      if (
+        usersData.some((u) => u.email === formData.email && u.id !== editUserId)
+      ) {
+        newErrors.email = "Email allaqachon mavjud";
       }
     }
 
-    if (formData.file) {
-      const allowed = ["image/png", "image/jpeg", "image/webp"];
-      if (!allowed.includes(formData.file.type)) {
-        newErrors.image = "Noto'g'ri formatdagi rasm yuklandi";
+    // PHONE
+    if (isChanged(formData.phone, originalData.phone)) {
+      const uzPhoneRegex = /^\+998(90|91|93|94|95|97|88|99)\d{7}$/;
+      if (!uzPhoneRegex.test(formData.phone)) {
+        newErrors.phone = "Telefon raqam noto'g'ri";
+      }
+      if (
+        usersData.some(
+          (u) => u.phone_number === formData.phone && u.id !== editUserId
+        )
+      ) {
+        newErrors.phone = "Telefon raqam allaqachon mavjud";
+      }
+    }
+
+    // PASSWORD (faqat yozilsa)
+    if (formData.password) {
+      const passRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&.]).{8,}$/;
+      if (!passRegex.test(formData.password)) {
+        newErrors.password = "Parol kuchsiz";
+      }
+    }
+
+    // PIN
+    if (isChanged(formData.pin_code, originalData.pin_code)) {
+      if (!/^\d{4}$/.test(formData.pin_code)) {
+        newErrors.pin_code = "Pin code 4 ta raqam bo‘lishi kerak";
       }
     }
 
     setErrors(newErrors);
-
-    // Agar xatolar bo'lmasa true qaytaradi
     return Object.keys(newErrors).length === 0;
   };
 
   const [editUserId, setEditUserId] = useState<number | null>(null);
   const handleEdit = (user: User) => {
     setEditUserId(user.id);
+    console.log(formData);
     setFormData({
-      login: "",
+      login: user.login,
       password: "",
-      full_name: "",
-      email: "",
-      phone: "",
+      full_name: user.full_name,
+      email: user.email,
+      phone: user.phone_number,
       file: null,
-      pin_code: "",
+      pin_code: user.pin_code,
+      active: user.is_active,
+      blocked: user.is_blocked,
+    });
+
+    setOriginalData({
+      login: user.login,
+      password: "",
+      full_name: user.full_name,
+      email: user.email,
+      phone: user.phone_number,
+      file: null,
+      pin_code: user.pin_code,
       active: user.is_active,
       blocked: user.is_blocked,
     });
@@ -618,6 +634,7 @@ export default function UsersTable() {
                         <Input
                           type="text"
                           id="userlogin"
+                          value={formData.login}
                           onChange={(e) =>
                             setFormData({ ...formData, login: e.target.value })
                           }
@@ -633,7 +650,8 @@ export default function UsersTable() {
                         <div>
                           <div className="relative">
                             <Input
-                              type={showPassword ? "text" : "password"}
+                              mask={!showPassword}
+                              placeholder="Yangi Parol"
                               onChange={(e) =>
                                 setFormData({
                                   ...formData,
@@ -663,6 +681,7 @@ export default function UsersTable() {
                       <div className="w-full">
                         <Label htmlFor="full_name">Ism Familiya</Label>
                         <Input
+                          value={formData.full_name}
                           type="text"
                           id="full_name"
                           onChange={(e) =>
@@ -683,6 +702,7 @@ export default function UsersTable() {
                         <div>
                           <div className="relative">
                             <Input
+                              value={formData.email}
                               type="text"
                               className="pl-[62px]"
                               onChange={(e) =>
@@ -708,6 +728,7 @@ export default function UsersTable() {
                         <PhoneInput
                           selectPosition="start"
                           countries={countries}
+                          value={formData.phone ? formData.phone : "+998"}
                           onChange={handlePhoneNumberChange}
                         />
                         <p className="dark:text-gray-400 text-gray-600 text-[13px] flex gap-2 items-center">
@@ -738,7 +759,8 @@ export default function UsersTable() {
                         <div>
                           <div className="relative">
                             <Input
-                              type={showPinCode ? "text" : "password"}
+                              value={formData.pin_code}
+                              mask={!showPinCode}
                               onChange={(e) =>
                                 setFormData({
                                   ...formData,
