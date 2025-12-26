@@ -13,13 +13,14 @@ type Debt = {
 type DashboardResponse = {
   debts: Debt[];
 };
+
 type Period = "day" | "month" | "year";
 
 interface Props {
   period: Period;
 }
 
-export default function StatisticsChart({period}: Props) {
+export default function StatisticsChart({ period }: Props) {
   const [data, setData] = useState<DashboardResponse | null>(null);
   const token = localStorage.getItem("access_token");
 
@@ -37,148 +38,162 @@ export default function StatisticsChart({period}: Props) {
         console.log(err);
       }
     };
+
     fetchData();
   }, [period]);
 
-  const monthlyGiven = new Array(12).fill(0);
-  const monthlyPaid = new Array(12).fill(0);
-  const monthlyLate = new Array(12).fill(0);
+  /* ==============================
+     PERIOD CONFIGURATION
+  ============================== */
+
+  const now = new Date();
+  let categories: string[] = [];
+  let length = 0;
+
+  if (period === "day") {
+    length = 30;
+    categories = Array.from({ length }, (_, i) => `${i + 1}`);
+  }
+
+  if (period === "month") {
+    length = 12;
+    categories = [
+      "Yanvar",
+      "Fevral",
+      "Mart",
+      "Aprel",
+      "May",
+      "Iyun",
+      "Iyul",
+      "Avgust",
+      "Sentyabr",
+      "Oktabr",
+      "Noyabr",
+      "Dekabr",
+    ];
+  }
+
+  if (period === "year") {
+    length = 10;
+    const currentYear = now.getFullYear();
+    categories = Array.from(
+      { length },
+      (_, i) => `${currentYear - (length - 1) + i}`
+    );
+  }
+
+  /* ==============================
+     DATA ARRAYS
+  ============================== */
+
+  const given = new Array(length).fill(0);
+  const paid = new Array(length).fill(0);
+  const late = new Array(length).fill(0);
 
   data?.debts.forEach((debt) => {
-    const month = new Date(debt.created_at).getMonth();
+    const date = new Date(debt.created_at);
+    let index = -1;
+
+    if (period === "day") {
+      index = date.getDate() - 1;
+    }
+
+    if (period === "month") {
+      index = date.getMonth();
+    }
+
+    if (period === "year") {
+      const currentYear = now.getFullYear();
+      index = date.getFullYear() - (currentYear - 9);
+    }
+
+    if (index < 0 || index >= length) return;
 
     const total = Number(debt.total_amount);
     const remaining = Number(debt.remaining_amount);
-    const paid = total - remaining;
+    const paidAmount = total - remaining;
 
-    monthlyGiven[month] += total;
-    monthlyPaid[month] += paid;
+    given[index] += total;
+    paid[index] += paidAmount;
 
     if (debt.debt_status === "active" && remaining > 0) {
-      monthlyLate[month] += remaining;
+      late[index] += remaining;
     }
   });
 
-  // const monthlyGiven = [
-  //   2000000, // Jan
-  //   3000000, // Feb
-  //   1500000, // Mar
-  //   4000000, // Apr
-  //   2500000, // May
-  //   5000000, // Jun
-  //   0,
-  //   0,
-  //   0,
-  //   0,
-  //   0,
-  //   0,
-  // ];
-
-  // const monthlyPaid = [
-  //   1000000, 2500000, 800000, 3000000, 2000000, 3500000, 0, 0, 0, 0, 0, 0,
-  // ];
-
-  // const monthlyLate = [
-  //   1000000, 500000, 700000, 1000000, 500000, 1500000, 0, 0, 0, 0, 0, 0,
-  // ];
+  /* ==============================
+     CHART SERIES
+  ============================== */
 
   const series = [
-    {
-      name: "Berilgan nasiya",
-      data: monthlyGiven,
-    },
-    {
-      name: "To'langan nasiya",
-      data: monthlyPaid,
-    },
-    {
-      name: "Kechiktirilgan nasiya",
-      data: monthlyLate,
-    },
+    { name: "Berilgan nasiya", data: given },
+    { name: "To'langan nasiya", data: paid },
+    { name: "Kechiktirilgan nasiya", data: late },
   ];
 
-  const options: ApexOptions = {
-    legend: { show: false, position: "top", horizontalAlign: "left" },
-    colors: [
-      "#12B76A", // 🟢 Berilgan
-      "#465FFF", // 🔵 To‘langan
-      "#F04438", // 🔴 Kechiktirilgan
-    ],
+  /* ==============================
+     CHART OPTIONS
+  ============================== */
 
+  const options: ApexOptions = {
+    legend: { show: false },
+    colors: ["#12B76A", "#465FFF", "#F04438"],
     chart: {
-      fontFamily: "Outfit, sans-serif",
+      type: "area",
       height: 310,
-      type: "line",
       toolbar: { show: false },
+      fontFamily: "Outfit, sans-serif",
     },
-    stroke: { curve: "straight", width: [2, 2, 2] },
-    fill: {
-      type: "gradient",
-      gradient: { opacityFrom: 0.55, opacityTo: 0 },
-    },
+    stroke: { curve: "straight", width: 2 },
     markers: {
       size: 0,
-      strokeColors: "#fff",
-      strokeWidth: 2,
       hover: { size: 6 },
     },
+    dataLabels: { enabled: false },
     grid: {
       xaxis: { lines: { show: false } },
       yaxis: { lines: { show: true } },
     },
-    dataLabels: { enabled: false },
     tooltip: {
+      x: {
+        formatter: (_: number, opts: any) => {
+          const label =
+            opts.w.globals.categoryLabels?.[opts.dataPointIndex] ??
+            opts.w.globals.labels?.[opts.dataPointIndex];
+
+          if (period === "day") return `${label}-kun`;
+          if (period === "year") return `${label}-yil`;
+
+          return label;
+        },
+      },
       y: {
         formatter: (val: number) => `${val.toLocaleString("uz-UZ")} UZS`,
       },
     },
     xaxis: {
-      categories: [
-        "Jan",
-        "Feb",
-        "Mar",
-        "Apr",
-        "May",
-        "Jun",
-        "Jul",
-        "Aug",
-        "Sep",
-        "Oct",
-        "Nov",
-        "Dec",
-      ],
+      categories,
       axisBorder: { show: false },
       axisTicks: { show: false },
     },
     yaxis: {
       labels: {
         formatter: (val: number) => val.toLocaleString("uz-UZ"),
-        style: {
-          fontSize: "12px",
-          colors: ["#6B7280"],
-        },
       },
     },
   };
 
   return (
     <div className="rounded-2xl border border-gray-200 bg-white px-5 pb-5 pt-5 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6 sm:pt-6">
-      <div className="flex flex-col gap-5 mb-6 sm:flex-row sm:justify-between">
-        <div className="w-full">
-          <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
-            Yillik Statistika
-          </h3>
-          <p className="mt-1 text-gray-500 text-theme-sm dark:text-gray-400">
-            Har bir oydagi nasiyalar ma'lumotlari
-          </p>
-        </div>
-      </div>
+      <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
+        Statistika
+      </h3>
+      <p className="mt-1 text-gray-500 text-theme-sm dark:text-gray-400">
+        {period === "day" ? "Kun" : period === "month" ? "Oy" : "Yil"} bo'yicha
+        to'liq ma'lumotlar
+      </p>
 
-      <div className="w-full overflow-hidden">
-        <div className="w-full">
-          <Chart options={options} series={series} type="area" height={310} />
-        </div>
-      </div>
+      <Chart options={options} series={series} height={310} type="line" />
     </div>
   );
 }

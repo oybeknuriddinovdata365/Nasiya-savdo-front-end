@@ -1,4 +1,4 @@
-import axios, { all } from "axios";
+import axios from "axios";
 import { BoxIconLine, GroupIcon } from "../../icons";
 import { useEffect, useState } from "react";
 type Store = {
@@ -50,7 +50,6 @@ export default function EcommerceMetrics({ period }: Props) {
         }
       );
       setAllStores(res.data.data);
-      handleDaySelected();
       // nasiya yopilgan debtorlarni sanab olish
       const closedDebtsCount =
         res.data.data?.debts?.filter(
@@ -132,9 +131,12 @@ export default function EcommerceMetrics({ period }: Props) {
     setCountNewUsers(usersThisYear.length);
     setNewClosedDebts(closedDebtsThisYear.length);
   };
-
   useEffect(() => {
     handleGetUsers();
+  }, []);
+  useEffect(() => {
+    if (!allStores) return;
+
     if (period === "day") {
       handleDaySelected();
     } else if (period === "month") {
