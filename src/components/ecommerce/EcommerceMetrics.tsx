@@ -1,4 +1,4 @@
-import axios, { all } from "axios";
+import axios from "axios";
 import { BoxIconLine, GroupIcon } from "../../icons";
 import { useEffect, useState } from "react";
 type Store = {
