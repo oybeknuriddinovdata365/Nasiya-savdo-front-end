@@ -183,6 +183,7 @@ export default function UserMetaCard() {
                   <Label>Username</Label>
                   <Input
                     type="text"
+                    placeholder="Yangi username"
                     onChange={(e) =>
                       setFormData({ ...formData, username: e.target.value })
                     }
@@ -195,6 +196,7 @@ export default function UserMetaCard() {
                 <div>
                   <Label>Telefon Raqam</Label>
                   <Input
+                  placeholder="yangi telefon raqam"
                     type="text"
                     onChange={(e) =>
                       setFormData({ ...formData, phone_number: e.target.value })

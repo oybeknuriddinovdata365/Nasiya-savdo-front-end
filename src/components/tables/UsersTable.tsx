@@ -317,11 +317,9 @@ export default function UsersTable() {
 
     if (!formData.phone.startsWith("+998") || formData.phone.length !== 13) {
       newErrors.phone = "Telefon raqam noto'g'ri formatda kiritildi";
-    } else if (
-      usersData.some(
-        (u) => u.phone_number === formData.phone && u.id !== editUserId
-      )
-    ) {
+    } else if (!/^\+998(90|91|93|94|95|97|88|99)/.test(formData.phone)) {
+      newErrors.phone = "Telefon raqam kodi noto'g'ri";
+    } else if (usersData.some((u) => u.phone_number === formData.phone)) {
       newErrors.phone = "Telefon raqam allaqachon mavjud";
     }
 
@@ -385,7 +383,9 @@ export default function UsersTable() {
     }
 
     if (formData.phone) {
-      if (!formData.phone.startsWith("+998") || formData.phone.length !== 13) {
+      const uzPhoneRegex = /^\+998(90|91|93|94|95|97|88|99)\d{7}$/;
+
+      if (!uzPhoneRegex.test(formData.phone)) {
         newErrors.phone = "Telefon raqam noto'g'ri formatda kiritildi";
       } else if (usersData.some((u) => u.phone_number === formData.phone)) {
         newErrors.phone = "Telefon raqam allaqachon mavjud";
@@ -536,6 +536,9 @@ export default function UsersTable() {
                                 : DefaultUserIcon
                             }
                             className="w-10 h-10 rounded-full object-cover"
+                            onError={(e) =>
+                              (e.currentTarget.src = DefaultUserIcon)
+                            }
                           />
 
                           <span className="text-sm text-gray-800 dark:text-white">

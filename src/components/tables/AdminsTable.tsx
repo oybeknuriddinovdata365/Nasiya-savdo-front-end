@@ -202,6 +202,8 @@ export default function UsersTable() {
       formData.phone_number.length !== 13
     ) {
       newErrors.phone = "Telefon raqam noto'g'ri formatda kiritildi";
+    } else if (!/^\+998(90|91|93|94|95|97|88|99)/.test(formData.phone_number)) {
+      newErrors.phone = "Telefon raqam kodi noto'g'ri";
     } else if (
       usersData.some(
         (u) => u.phone_number === formData.phone_number && u.id !== editUserId
@@ -248,6 +250,10 @@ export default function UsersTable() {
         formData.phone_number.length !== 13
       ) {
         newErrors.phone = "Telefon raqam noto'g'ri formatda kiritildi";
+      } else if (
+        !/^\+998(90|91|93|94|95|97|88|99)/.test(formData.phone_number)
+      ) {
+        newErrors.phone = "Telefon raqam kodi noto'g'ri";
       } else if (
         usersData.some((u) => u.phone_number === formData.phone_number)
       ) {
