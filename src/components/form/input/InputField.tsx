@@ -13,6 +13,7 @@ interface InputProps {
   max?: string;
   step?: number;
   disabled?: boolean;
+  auto_complete?: string;
   success?: boolean;
   error?: boolean;
   hint?: string;
@@ -29,6 +30,7 @@ const Input: FC<InputProps> = ({
   min,
   max,
   step,
+  auto_complete = "new-password",
   disabled = false,
   success = false,
   error = false,
@@ -57,7 +59,7 @@ const Input: FC<InputProps> = ({
         onChange={onChange}
         min={min}
         max={max}
-        autoComplete="off"
+        autoComplete={auto_complete}
         step={step}
         disabled={disabled}
         className={inputClasses}

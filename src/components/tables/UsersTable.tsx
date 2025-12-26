@@ -606,7 +606,7 @@ export default function UsersTable() {
           )}
           <Modal isOpen={isOpen} onClose={close} className="max-w-[700px] m-4">
             <div className="no-scrollbar relative w-full max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
-              <form className="flex flex-col">
+              <form className="flex flex-col" autoComplete="off">
                 <div className="custom-scrollbar h-[500px] overflow-y-auto px-2 pb-3">
                   <div className="mt-3">
                     <h5 className="mb-5 text-lg md:text-[25px] font-medium text-gray-800 dark:text-white/90 lg:mb-6">
@@ -614,10 +614,10 @@ export default function UsersTable() {
                     </h5>
                     <div className="grid grid-cols-1  sm:grid-cols-2 gap-3 sm:space-y-2.5">
                       <div>
-                        <Label htmlFor="login">Login</Label>
+                        <Label htmlFor="userlogin">Login</Label>
                         <Input
                           type="text"
-                          id="login"
+                          id="userlogin"
                           onChange={(e) =>
                             setFormData({ ...formData, login: e.target.value })
                           }

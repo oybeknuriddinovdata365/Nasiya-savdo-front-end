@@ -62,6 +62,7 @@ export default function SignInForm() {
                     Username <span className="text-error-500">*</span>{" "}
                   </Label>
                   <Input
+                    auto_complete="on"
                     type="text"
                     placeholder="Usernamengizni kiriting"
                     value={username}
@@ -74,6 +75,7 @@ export default function SignInForm() {
                   </Label>
                   <div className="relative">
                     <Input
+                      auto_complete="on"
                       type={showPassword ? "text" : "password"}
                       placeholder="Parolingizni kiriting"
                       value={password}
