@@ -20,6 +20,14 @@ import {
   PencilIcon,
   TrashBinIcon,
 } from "../../icons";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import { useEffect, useState } from "react";
 import PhoneInput from "../form/group-input/PhoneInput";
 import FileInput from "../form/input/FileInput";
@@ -460,6 +468,19 @@ export default function UsersTable() {
     openModal: openDeleteModal,
     closeModal: closeDeleteModal,
   } = useModal();
+
+  // Pagination
+
+  const ITEMS_PER_PAGE = 10;
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const totalPages = Math.ceil(usersData.length / ITEMS_PER_PAGE);
+
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+
+  const paginatedUsers = usersData.slice(startIndex, endIndex);
+
   return (
     <div className="flex  flex-col gap-5">
       <div className="flex justify-between items-center">
@@ -538,7 +559,7 @@ export default function UsersTable() {
               {/* BODY */}
               <TableBody>
                 {usersData.length > 0 ? (
-                  usersData.map((user: User) => (
+                  paginatedUsers.map((user: User) => (
                     <TableRow key={user.id}>
                       {/* Avatar + Fullname */}
                       <TableCell className="px-7 py-4 ">
@@ -850,6 +871,41 @@ export default function UsersTable() {
           </Modal>
         </div>
       </div>
+      {/* PAGINATION */}
+      {usersData.length > 10 && (
+        <div className="flex justify-end p-4">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                />
+              </PaginationItem>
+
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                (page) => (
+                  <PaginationItem key={page}>
+                    <PaginationLink
+                      isActive={page === currentPage}
+                      onClick={() => setCurrentPage(page)}
+                    >
+                      {page}
+                    </PaginationLink>
+                  </PaginationItem>
+                )
+              )}
+
+              <PaginationItem>
+                <PaginationNext
+                  onClick={() =>
+                    setCurrentPage((p) => Math.min(p + 1, totalPages))
+                  }
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
     </div>
   );
 }
