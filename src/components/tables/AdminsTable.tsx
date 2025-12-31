@@ -362,8 +362,10 @@ export default function UsersTable() {
 
   return (
     <div className="flex  flex-col gap-5">
-      <div className="flex justify-between items-center">
-        <h1 className="text-[20px] dark:text-white">Adminlar</h1>
+      <div className="flex flex-col justify-center md:flex-row  md:justify-between items-center">
+        <h1 className="text-[20px] dark:text-white">
+          Adminlar {isLoading ? " " : usersData.length}
+        </h1>
         <Button onClick={openModal} size="sm">
           Admin qo'shish
         </Button>
@@ -615,6 +617,7 @@ export default function UsersTable() {
             <PaginationContent>
               <PaginationItem>
                 <PaginationPrevious
+                  className="cursor-pointer"
                   onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
                 />
               </PaginationItem>
@@ -623,6 +626,7 @@ export default function UsersTable() {
                 (page) => (
                   <PaginationItem key={page}>
                     <PaginationLink
+                      className="cursor-pointer"
                       isActive={page === currentPage}
                       onClick={() => setCurrentPage(page)}
                     >
@@ -634,6 +638,7 @@ export default function UsersTable() {
 
               <PaginationItem>
                 <PaginationNext
+                  className="cursor-pointer"
                   onClick={() =>
                     setCurrentPage((p) => Math.min(p + 1, totalPages))
                   }

@@ -36,6 +36,8 @@ import toast from "react-hot-toast";
 import axios from "axios";
 import DefaultUserIcon from "../../assets/defUserIcon.png";
 import { SkeletonRow } from "../common/SkeletonRow";
+import { Info } from "lucide-react";
+import { useNavigate } from "react-router";
 interface ErrorType {
   login?: string;
   password?: string;
@@ -199,7 +201,6 @@ export default function UsersTable() {
     if (isChanged(formData.blocked, originalData.blocked))
       fd.append("is_blocked", String(formData.blocked));
 
-    // 🔴 AGAR HECH NIMA YO‘Q BO‘LSA
     if ([...fd.entries()].length === 0) {
       toast.error("Hech qanday ozgarish kiritilmadi");
       return;
@@ -289,7 +290,7 @@ export default function UsersTable() {
         const response = await axios.get(`${API}/store`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-
+        console.log(response.data.data);
         if (Array.isArray(response.data.data)) {
           setUsersData(response.data.data);
         } else {
@@ -469,6 +470,8 @@ export default function UsersTable() {
     closeModal: closeDeleteModal,
   } = useModal();
 
+  const navigate = useNavigate();
+
   // Pagination
 
   const ITEMS_PER_PAGE = 10;
@@ -483,10 +486,12 @@ export default function UsersTable() {
 
   return (
     <div className="flex  flex-col gap-5">
-      <div className="flex justify-between items-center">
-        <h1 className="text-[20px] dark:text-white">Userlar</h1>
+      <div className="flex flex-col justify-center md:flex-row md:justify-between items-center">
+        <h1 className="text-[20px] dark:text-white">
+          Foydalanuvchilar {isLoading ? " " : usersData.length}
+        </h1>
         <Button onClick={openModal} size="sm">
-          User qo'shish
+          Foydalanuvchi qo'shish
         </Button>
       </div>
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
@@ -627,6 +632,9 @@ export default function UsersTable() {
                           }}
                         >
                           <TrashBinIcon fontSize={18} />
+                        </Button>
+                        <Button size="sm" className="ml-2" onClick={()=>{navigate(`/user/${user.id}`)}}>
+                          <Info className="text-white size-5" />
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -846,9 +854,15 @@ export default function UsersTable() {
               </div>
               <div className="mt-5">
                 <p className="dark:text-white/70 text-sm text-black/70">
-                  Agar hozir bu buyruqni tasdiqlasangiz tanlangan ma'lumot
-                  o'chib ketadi va uni orqaga qaytarishni iloji yo'q bo'ladi.
-                  Rostdan ham buni tasdiqlaysizmi?
+                  Buyruqni Tadiqlaysizmi? Siz rostdan ham{" "}
+                  <span className="text-black dark:text-white bg-red-500/20 text-[16px]">
+                    {
+                      usersData.find((user) => user.id === deleteUserId)
+                        ?.full_name
+                    }{" "}
+                  </span>
+                  ni o'chirmoqchimisiz? tasdiqlangan buyruqni ortga qaytarib
+                  bo'lmaydi!
                 </p>
               </div>
               <div className="flex justify-end gap-3 mt-4">
@@ -878,6 +892,7 @@ export default function UsersTable() {
             <PaginationContent>
               <PaginationItem>
                 <PaginationPrevious
+                className="cursor-pointer"
                   onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
                 />
               </PaginationItem>
@@ -886,6 +901,7 @@ export default function UsersTable() {
                 (page) => (
                   <PaginationItem key={page}>
                     <PaginationLink
+                    className="cursor-pointer"
                       isActive={page === currentPage}
                       onClick={() => setCurrentPage(page)}
                     >
@@ -897,6 +913,7 @@ export default function UsersTable() {
 
               <PaginationItem>
                 <PaginationNext
+                className="cursor-pointer"
                   onClick={() =>
                     setCurrentPage((p) => Math.min(p + 1, totalPages))
                   }
