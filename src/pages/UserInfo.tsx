@@ -352,9 +352,9 @@ function UserInfo() {
                             </div>
                           </AccordionTrigger>
                           <AccordionContent className="dark:bg-[#171F2F] shadow-lg border-2 dark:border-[#242B3A] border-gray-100 rounded-b-lg ">
-                            <div className="flex justify-between gap-10 mt-3 px-2">
+                            <div className="flex flex-col md:flex-row justify-between gap-10 mt-3 px-2">
                               {/* CHAP TOMON */}
-                              <div className="w-1/2 flex flex-col gap-5">
+                              <div className="md:w-1/2 flex flex-col gap-5">
                                 <h1 className="text-[20px] font-semibold">
                                   {debt.description}
                                 </h1>
@@ -393,7 +393,7 @@ function UserInfo() {
                               </div>
 
                               {/* O‘NG TOMON */}
-                              <div className="w-1/2 flex flex-col gap-4">
+                              <div className="md:w-1/2 flex flex-col gap-4">
                                 <div
                                   key={debt.id}
                                   className=" p-5 flex flex-col gap-3"
