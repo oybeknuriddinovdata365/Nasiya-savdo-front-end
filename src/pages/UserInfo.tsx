@@ -32,7 +32,7 @@ type Store = {
   name?: string;
   is_active?: boolean;
   created_at?: string;
-  debtors?: Debtor[];
+  debtors: Debtor[];
   payments: Payment[];
 };
 
@@ -107,8 +107,8 @@ function UserInfo() {
   }, [id]);
 
   const visibleDebtors = more
-    ? userData?.debtors ?? []
-    : userData?.debtors?.slice(0, 3) ?? [];
+    ? userData?.debtors
+    : userData?.debtors?.slice(0, 3);
 
   const allDebts =
     userData?.debtors?.flatMap((debtor) => debtor.debts ?? []) ?? [];
@@ -211,7 +211,7 @@ function UserInfo() {
             <div>
               <div className="flex justify-between items-center">
                 <h1 className="text-[20px] mb-5">Mijozlar</h1>
-                {visibleDebtors?.length > 3 && (
+                {(userData?.debtors?.length ?? 0) > 3 && (
                   <button
                     className="cursor-pointer text-[14px] underline hover:text-blue-500"
                     onClick={() => setMore((prev) => !prev)}
@@ -273,7 +273,7 @@ function UserInfo() {
             <div>
               <div className="flex justify-between items-center">
                 <h1 className="text-[20px] mb-5">Tolovlar Tarixi</h1>
-                {visiblePayments.length > 3 && (
+                {(userData?.payments.length ?? 0) > 3 && (
                   <button
                     className="cursor-pointer text-[14px] underline hover:text-blue-500"
                     onClick={() => setMorePayments((prev) => !prev)}
