@@ -38,6 +38,7 @@ import DefaultUserIcon from "../../assets/defUserIcon.png";
 import { SkeletonRow } from "../common/SkeletonRow";
 import { Info } from "lucide-react";
 import { useNavigate } from "react-router";
+import SearchInput from "../ui/search/searchInput";
 interface ErrorType {
   login?: string;
   password?: string;
@@ -472,17 +473,30 @@ export default function UsersTable() {
 
   const navigate = useNavigate();
 
+  //   Search
+  const [searchTerm, setSearchTerm] = useState("");
+  const filteredUsers = usersData.filter((user) => {
+    const search = searchTerm.toLowerCase();
+
+    return (
+      user.login.toLowerCase().includes(search) ||
+      user.full_name.toLowerCase().includes(search) ||
+      user.email.toLowerCase().includes(search) ||
+      user.phone_number.includes(search)
+    );
+  });
+
   // Pagination
 
   const ITEMS_PER_PAGE = 10;
   const [currentPage, setCurrentPage] = useState(1);
 
-  const totalPages = Math.ceil(usersData.length / ITEMS_PER_PAGE);
-
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const endIndex = startIndex + ITEMS_PER_PAGE;
 
-  const paginatedUsers = usersData.slice(startIndex, endIndex);
+  const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE);
+
+  const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
 
   return (
     <div className="flex  flex-col gap-5">
@@ -490,6 +504,12 @@ export default function UsersTable() {
         <h1 className="text-[20px] dark:text-white">
           Foydalanuvchilar {isLoading ? " " : usersData.length}
         </h1>
+        <SearchInput
+          value={searchTerm}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            setSearchTerm(e.target.value)
+          }
+        />
         <Button onClick={openModal} size="sm">
           Foydalanuvchi qo'shish
         </Button>
@@ -563,7 +583,7 @@ export default function UsersTable() {
 
               {/* BODY */}
               <TableBody>
-                {usersData.length > 0 ? (
+                {filteredUsers.length > 0 ? (
                   paginatedUsers.map((user: User) => (
                     <TableRow key={user.id}>
                       {/* Avatar + Fullname */}
@@ -633,7 +653,13 @@ export default function UsersTable() {
                         >
                           <TrashBinIcon fontSize={18} />
                         </Button>
-                        <Button size="sm" className="ml-2" onClick={()=>{navigate(`/user/${user.id}`)}}>
+                        <Button
+                          size="sm"
+                          className="ml-2"
+                          onClick={() => {
+                            navigate(`/user/${user.id}`);
+                          }}
+                        >
                           <Info className="text-white size-5" />
                         </Button>
                       </TableCell>
@@ -886,13 +912,13 @@ export default function UsersTable() {
         </div>
       </div>
       {/* PAGINATION */}
-      {usersData.length > 10 && (
+      {filteredUsers.length > 10 && (
         <div className="flex justify-end p-4">
           <Pagination>
             <PaginationContent>
               <PaginationItem>
                 <PaginationPrevious
-                className="cursor-pointer"
+                  className="cursor-pointer"
                   onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
                 />
               </PaginationItem>
@@ -901,7 +927,7 @@ export default function UsersTable() {
                 (page) => (
                   <PaginationItem key={page}>
                     <PaginationLink
-                    className="cursor-pointer"
+                      className="cursor-pointer"
                       isActive={page === currentPage}
                       onClick={() => setCurrentPage(page)}
                     >
@@ -913,7 +939,7 @@ export default function UsersTable() {
 
               <PaginationItem>
                 <PaginationNext
-                className="cursor-pointer"
+                  className="cursor-pointer"
                   onClick={() =>
                     setCurrentPage((p) => Math.min(p + 1, totalPages))
                   }

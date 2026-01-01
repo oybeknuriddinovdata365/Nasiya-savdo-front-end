@@ -8,7 +8,7 @@ type SearchInputProps = {
 };
 
 const SearchInput = ({
-  placeholder = "Search...",
+  placeholder = "Qidirish...",
   value,
   onChange,
   className = "",

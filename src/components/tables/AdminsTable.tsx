@@ -32,6 +32,8 @@ import axios from "axios";
 import { SkeletonRow } from "../common/SkeletonRow";
 import { Admin } from "../common/types";
 import { useAuth } from "../../context/AuthContext";
+import { Search } from "lucide-react";
+import SearchInput from "../ui/search/searchInput";
 interface ErrorType {
   username?: string;
   password?: string;
@@ -348,17 +350,31 @@ export default function UsersTable() {
     closeModal: closeDeleteModal,
   } = useModal();
 
+  // Search
+
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const filteredUsers = usersData.filter((user) => {
+    const search = searchTerm.toLowerCase();
+
+    return (
+      user.username.toLowerCase().includes(search) ||
+      user.phone_number.includes(search) ||
+      user.role?.toLowerCase().includes(search)
+    );
+  });
+
   // Pagination
 
   const ITEMS_PER_PAGE = 10;
   const [currentPage, setCurrentPage] = useState(1);
 
-  const totalPages = Math.ceil(usersData.length / ITEMS_PER_PAGE);
-
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const endIndex = startIndex + ITEMS_PER_PAGE;
 
-  const paginatedUsers = usersData.slice(startIndex, endIndex);
+  const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE);
+
+  const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
 
   return (
     <div className="flex  flex-col gap-5">
@@ -366,6 +382,12 @@ export default function UsersTable() {
         <h1 className="text-[20px] dark:text-white">
           Adminlar {isLoading ? " " : usersData.length}
         </h1>
+        <SearchInput
+          value={searchTerm}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            setSearchTerm(e.target.value)
+          }
+        />
         <Button onClick={openModal} size="sm">
           Admin qo'shish
         </Button>
@@ -419,7 +441,7 @@ export default function UsersTable() {
 
               {/* BODY */}
               <TableBody>
-                {usersData.length > 0 ? (
+                {filteredUsers.length > 0 ? (
                   paginatedUsers.map((user: Admin) => (
                     <TableRow key={user.id}>
                       {/* Login */}
@@ -611,7 +633,7 @@ export default function UsersTable() {
       </div>
 
       {/* PAGINATION */}
-      {usersData.length > 10 && (
+      {filteredUsers.length > 10 && (
         <div className="flex justify-end p-4">
           <Pagination>
             <PaginationContent>
