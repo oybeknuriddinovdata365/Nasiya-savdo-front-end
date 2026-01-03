@@ -12,6 +12,7 @@ import NotAccess from "./pages/OtherPage/NotAccess";
 import AdminTable from "./components/tables/AdminsTable";
 import ProtectedRouteAdmin from "./components/Route/ProtectedAdmin";
 import UserInfo from "./pages/UserInfo";
+import DebtorInfoPage from "./pages/DebtorInfo";
 
 export default function App() {
   return (
@@ -28,6 +29,7 @@ export default function App() {
             <Route element={<AppLayout />}>
               <Route index path="/" element={<Home />} />
               <Route path="/user/:id" element={<UserInfo />} />
+              <Route path="/debtor/:id" element={<DebtorInfoPage />} />
               <Route
                 path="/profile"
                 element={

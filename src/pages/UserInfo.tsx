@@ -21,7 +21,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { useEffect, useState } from "react";
-import { useParams } from "react-router";
+import { Link, useParams } from "react-router";
 type Store = {
   image?: string;
   full_name?: string;
@@ -93,9 +93,8 @@ function UserInfo() {
 
         const data = res.data.data;
         const user = data?.stores?.find((user: any) => user.id === Number(id));
-        console.log(user);
-
         setUserData(user || null);
+        console.log(res.data.data)
       } catch (error) {
         console.log(error);
       } finally {
@@ -228,9 +227,10 @@ function UserInfo() {
                   </h1>
                 ) : (
                   visibleDebtors?.map((debtor) => (
-                    <div
+                    <Link
+                      to={`/debtor/${debtor.id}`}
                       key={debtor.id}
-                      className="dark:bg-[#171F2F] shadow-lg border-2 dark:border-[#242B3A] border-gray-100 p-5 rounded-lg"
+                      className="dark:bg-[#171F2F]  shadow-lg border-2 dark:border-[#242B3A] dark:hover:bg-[#242B3A] hover:bg-gray-100 hover:border-2 dark:hover:border-white/50 hover:border-black/50 border-gray-100 p-5 rounded-lg"
                     >
                       <div className="flex flex-col gap-3">
                         <h1 className="font-semibold">{debtor.full_name}</h1>
@@ -264,7 +264,7 @@ function UserInfo() {
                           )}
                         </div>
                       </div>
-                    </div>
+                    </Link>
                   ))
                 )}
               </div>

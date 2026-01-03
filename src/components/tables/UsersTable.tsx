@@ -291,7 +291,6 @@ export default function UsersTable() {
         const response = await axios.get(`${API}/store`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        console.log(response.data.data);
         if (Array.isArray(response.data.data)) {
           setUsersData(response.data.data);
         } else {
@@ -485,6 +484,9 @@ export default function UsersTable() {
       user.phone_number.includes(search)
     );
   });
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   // Pagination
 
