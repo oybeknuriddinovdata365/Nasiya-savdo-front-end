@@ -51,7 +51,13 @@ export default function StatisticsChart({ period }: Props) {
   let length = 0;
 
   if (period === "day") {
-    length = 30;
+    const daysInMonth = new Date(
+      now.getFullYear(),
+      now.getMonth() + 1,
+      0
+    ).getDate();
+
+    length = daysInMonth;
     categories = Array.from({ length }, (_, i) => `${i + 1}`);
   }
 
@@ -95,16 +101,33 @@ export default function StatisticsChart({ period }: Props) {
     let index = -1;
 
     if (period === "day") {
+      if (
+        date.getFullYear() !== now.getFullYear() ||
+        date.getMonth() !== now.getMonth()
+      ) {
+        return;
+      }
+
       index = date.getDate() - 1;
     }
 
     if (period === "month") {
+      if (date.getFullYear() !== now.getFullYear()) {
+        return;
+      }
+
       index = date.getMonth();
     }
 
     if (period === "year") {
-      const currentYear = now.getFullYear();
-      index = date.getFullYear() - (currentYear - 9);
+      const startYear = now.getFullYear() - 9;
+      const year = date.getFullYear();
+
+      if (year < startYear || year > now.getFullYear()) {
+        return;
+      }
+
+      index = year - startYear;
     }
 
     if (index < 0 || index >= length) return;

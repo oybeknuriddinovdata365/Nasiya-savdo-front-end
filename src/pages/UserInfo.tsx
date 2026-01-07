@@ -70,7 +70,7 @@ type Debt = {
   updated_at: string;
   created_at: string;
 };
-type DebtStatus = "active" | "closed";
+type DebtStatus = "active" | "closed"
 
 function UserInfo() {
   const { id } = useParams();
@@ -94,7 +94,7 @@ function UserInfo() {
         const data = res.data.data;
         const user = data?.stores?.find((user: any) => user.id === Number(id));
         setUserData(user || null);
-        console.log(res.data.data)
+        console.log(res.data.data);
       } catch (error) {
         console.log(error);
       } finally {
